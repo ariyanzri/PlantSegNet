@@ -39,6 +39,8 @@ class SorghumPartNetSemantic(pl.LightningModule):
         # Normalization (min max)
         mins,_ = torch.min(xyz,axis=1)
         maxs,_ = torch.max(xyz,axis=1)
+        mins = mins.unsqueeze(1)
+        maxs = maxs.unsqueeze(1)
         xyz = (xyz-mins)/(maxs-mins) - 0.5
 
         # Semantic Label Prediction
@@ -121,7 +123,6 @@ class SorghumPartNetSemantic(pl.LightningModule):
 
         pred_semantic_label = self(points)
 
-        print(semantic_label.shape,pred_semantic_label.shape)
         critirion = torch.nn.CrossEntropyLoss()
         semantic_label_loss = critirion(pred_semantic_label, semantic_label)
 
@@ -178,6 +179,8 @@ class SorghumPartNetInstance(pl.LightningModule):
         # Normalization (min max)
         mins,_ = torch.min(xyz,axis=1)
         maxs,_ = torch.max(xyz,axis=1)
+        mins = mins.unsqueeze(1)
+        maxs = maxs.unsqueeze(1)
         xyz = (xyz-mins)/(maxs-mins) - 0.5
 
         # Instance 

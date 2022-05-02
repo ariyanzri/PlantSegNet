@@ -1,11 +1,11 @@
-from lib2to3.pytree import LeafPattern
-import sys
-sys.path.append("/work/ariyanzarei/SorghumSegmentation/TreePartNet/utils")
-sys.path.append("/work/ariyanzarei/SorghumSegmentation/TreePartNet/pointnet2_ops_lib")
-from TreeDataset import SorghumDataset
-from load_raw_data import *
+from turtle import position
 import matplotlib.pyplot as plt
 import torch
+import os
+import pandas as pd
+import random
+import numpy as np
+from scipy.spatial.distance import cdist
 
 '''
 algorithm:
@@ -81,11 +81,33 @@ def generate_data_single_pcd(points, ground, plant, leaf, leaf_pair_sample_no = 
             single_leaf_data_points.append(points_leaf.cpu().numpy())
     
     return single_leaf_data_points,double_leaf_data_points
-            
-def generate_data(dataset_path):
-    ds = SorghumDataset(dataset_path)
-    points, ground, semantic, plant, leaf = ds[4]
-    single,double = generate_data_single_pcd(points,ground,plant,leaf)
-    print(len(single),len(double))
 
-generate_data("/space/ariyanzarei/sorghum_segmentation/dataset/2022-03-10/sorghum__labeled_train.hdf5")
+def calculate_leaf_tip_distances(positions):
+    distances = cdist(positions,positions)
+    return distances
+
+def get_leaves_with_close_distance(distances,pcd_path):
+    x,y = np.where((distances>0)&(distances<0.1))
+    print(x,y)
+
+def generate_data(dataset_path):
+    pcd_path = os.path.join(dataset_path,"PointCloud")
+    csv_path = os.path.join(dataset_path,"CSV")
+
+    pcd_files = os.listdir(pcd_path)
+    for pcd_f in pcd_files:
+        csv = pd.read_csv(os.path.join(csv_path,pcd_f.replace("ply","csv")))
+        x = csv["tip_pos_x"].to_numpy()
+        y = csv["tip_pos_y"].to_numpy()
+        z = csv["tip_pos_z"].to_numpy()
+
+        positions = np.stack((x,y,z),axis=-1)
+        distances = calculate_leaf_tip_distances(positions)
+        
+        get_leaves_with_close_distance(distances,pcd_path)
+
+    # points, ground, semantic, plant, leaf = ds[4]
+    # single,double = generate_data_single_pcd(points,ground,plant,leaf)
+    # print(len(single),len(double))
+
+generate_data("/space/ariyanzarei/sorghum_segmentation/dataset/2022-05-01")
