@@ -2,7 +2,7 @@ import open3d as o3d
 import numpy as np
 import random
 from plyfile import PlyData, PlyElement
-from data.utils import *
+from SorghumPartNet.data.utils import *
 
 def load_pcd_plyfile(path,index_to_use='leaf_index',down_sample_n=8000):
     try:
@@ -10,6 +10,9 @@ def load_pcd_plyfile(path,index_to_use='leaf_index',down_sample_n=8000):
             plydata = PlyData.read(f)
             points = np.asarray(np.array(plydata.elements[0].data).tolist())
             points_full = np.asarray(np.array(plydata.elements[0].data).tolist())
+            
+            if down_sample_n is None:
+                down_sample_n = points_full.shape[0]
 
             downsample_indexes = random.sample(np.arange(0,points.shape[0]).tolist(),min(down_sample_n,points.shape[0]))
             points = points[downsample_indexes]
@@ -66,7 +69,7 @@ def load_ply_file_points(path):
     pcd = o3d.io.read_point_cloud(path)
     return np.array(pcd.points)
 
-def paint_pcd_into_o3d(plyfile_pcd,key):
+def paint_pcd_into_o3d(plyfile_pcd, key):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(plyfile_pcd['points'])
     pcd.paint_uniform_color([0,0,0])
@@ -76,8 +79,8 @@ def paint_pcd_into_o3d(plyfile_pcd,key):
 
     d_colors = distinct_colors()
     
-    for i in range(ind_min,ind_max+1):
-        colors[plyfile_pcd[key][:,0]==i,:] = d_colors[i+1]
+    #for i in range(ind_min,ind_max+1):
+    #    colors[plyfile_pcd[key][:,0]==i,:] = d_colors[i+1]
 
     pcd.colors = o3d.utility.Vector3dVector(colors)
     return pcd
