@@ -1,0 +1,7 @@
+h5py==3.6.0
+k3d==2.14.1
+open3d==0.15.2
+plyfile==0.7.4
+pytorch-lightning==1.6.4
+torch==1.11.0
+torchsummary==1.5.1
