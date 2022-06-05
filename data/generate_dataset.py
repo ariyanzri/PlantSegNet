@@ -114,6 +114,6 @@ def generate_h5py(path_raw_data,path_h5py,index_to_use,point_no=8000,split_ratio
         for k in test_dataset.keys():
             f.create_dataset(k,data=test_dataset[k])
 
-generate_h5py("/space/ariyanzarei/sorghum_segmentation/dataset/2022-03-10/PointCloud",\
-    "/space/ariyanzarei/sorghum_segmentation/dataset/2022-03-10","leaf_index")
+# generate_h5py("/space/ariyanzarei/sorghum_segmentation/dataset/2022-03-10/PointCloud",\
+#    "/space/ariyanzarei/sorghum_segmentation/dataset/2022-03-10","leaf_index")
 # generate_h5py("/space/ariyanzarei/sorghum_segmentation/PointCloud","/space/ariyanzarei/sorghum_segmentation/SorghumData","leaf_part_index")

@@ -1,5 +1,4 @@
 import sys
-sys.path.append("/work/ariyanzarei/SorghumSegmentation/TreePartNet/pointnet2_ops_lib")
 from pointnet2_ops.pointnet2_utils import FurthestPointSampling
 import torch
 import numpy as np
@@ -21,6 +20,17 @@ def distinct_colors(n=200):
         colors.append(c)
     
     return colors
+
+def rgb_dec_to_hex(tup):
+    """
+    Given input in [0,1] x 3 indicating RGB color, returns integer hex representation. For use with
+    k3d visualization which requires this particular color format.
+
+    ex, (1, 1, 1) -> 255255255
+    """
+    a = np.array(tup)
+    a = (a * 256).astype('uint8')
+    return a[0] * 255**2 + a[1] * 255 + a[2]
 
 def get_furthest_point_samples(points,n_samples):
     furthest_point_sampling = FurthestPointSampling.apply
