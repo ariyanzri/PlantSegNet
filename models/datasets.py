@@ -79,13 +79,15 @@ class LeafDataset(data.Dataset):
     def __getitem__(self, index):
         f = h5py.File(self.h5_filename,'r')
         points = f['points'][index]
-        is_single_leaf = f['is_single_leaf'][index]
+
+        # Note leaf counts are expected to be either 1 or 2
+        is_single_leaf = 2 - f['leaf_count'][index]
         
         f.close()
 
         return (
             torch.from_numpy(points).float(),
-            torch.from_numpy(is_single_leaf).float()
+            torch.from_numpy(np.array(is_single_leaf)).type(torch.LongTensor)
         )
             
 
@@ -94,7 +96,7 @@ class LeafDataset(data.Dataset):
             return self.length
         else:
             f = h5py.File(self.h5_filename,'r')
-            self.length=len(f['names'])
+            self.length=len(f['points'])
             f.close()
             return self.length
 

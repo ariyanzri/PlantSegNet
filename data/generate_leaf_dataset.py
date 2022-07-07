@@ -14,7 +14,6 @@ import argparse
 def filter_points(leaf_dataset, key, idx):
     leaf_dataset["points"][key] = leaf_dataset["points"][key][idx]
     leaf_dataset["leaf_index"][key] = leaf_dataset["leaf_index"][key][idx]
-    leaf_dataset["leaf_count"][key] = leaf_dataset["leaf_count"][key][idx]
 
 
 def filter_samples(leaf_dataset, keys):
@@ -55,13 +54,13 @@ def add_merged(leaf_dataset, idx_a, idx_b):
     paired_points = np.concatenate((leaf_dataset["points"][idx_a], leaf_dataset["points"][idx_b]))
     paired_leaf_indices = np.concatenate(
         (leaf_dataset["leaf_index"][idx_a], leaf_dataset["leaf_index"][idx_b]))
-    paired_leaf_counts = np.full(paired_points.shape[0], 2).astype(np.int8)
+    paired_leaf_count = 2
 
     assert leaf_dataset["_plant_index"][idx_a] == leaf_dataset["_plant_index"][idx_b]
 
     leaf_dataset["points"].append(paired_points)
     leaf_dataset["leaf_index"].append(paired_leaf_indices)
-    leaf_dataset["leaf_count"].append(paired_leaf_counts)
+    leaf_dataset["leaf_count"].append(paired_leaf_count)
     leaf_dataset["_plant_index"].append(leaf_dataset["_plant_index"][idx_a])
 
 
@@ -151,7 +150,7 @@ def generate_leaf_dataset(
             leaf_centroids.append(leaf_centroid)
             leaf_dataset['points'].append(leaf_points)
             leaf_dataset['leaf_index'].append(np.full(leaf_points.shape[0], leaf_index))
-            leaf_dataset['leaf_count'].append(np.ones(leaf_points.shape[0]).astype(np.int8))
+            leaf_dataset['leaf_count'].append(1)
             leaf_dataset['_plant_index'].append(plant_index[0]) #TODO check this
 
             leaf_ref_indices.append(leaf_total_count)
@@ -198,6 +197,8 @@ def generate_leaf_dataset(
 
     # with the centroid distances calculated we can get the closest k pairs
     k = np.min(double_leaf_sample_n) # TODO be a bit smarter about this
+
+    # 
     near_samples = np.argsort(leaf_centroid_distances, axis=None)
     idx = np.array(np.unravel_index(near_samples[0:k], leaf_centroid_distances.shape))
 
@@ -331,8 +332,8 @@ def plot_leaf_dataset(leaf_dataset):
             mean_adj = np.mean(points, axis=0)
 
             new_points = points + np.array([i * grid_size, j * grid_size, 0]) - mean_adj
-            color = 0x0000ff if leaf_dataset["leaf_count"][ridx][0] == 1 else 0xff00ff 
-            print(f'color {color} {leaf_dataset["leaf_count"][ridx][0]}')
+            color = 0x0000ff if leaf_dataset["leaf_count"][ridx] == 1 else 0xff00ff 
+            print(f'color {color} {leaf_dataset["leaf_count"][ridx]}')
             plt_points = k3d.points(positions=new_points, point_size=0.01, color=color)
             plot += plt_points
             idx += 1
@@ -374,7 +375,7 @@ def get_args():
                         metavar='threshold',
                         required=False,
                         type=float,
-                        default=0.5)
+                        default=0.1)
 
     parser.add_argument('-t',
                         '--total',

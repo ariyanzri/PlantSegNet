@@ -82,3 +82,6 @@ class LeafMetrics(nn.Module):
         F = 2*(Precision*Recall)/(Precision+Recall)
 
         return Acc, Precision, Recall, F
+
+def binary_acc(out, target):
+    return (torch.softmax(out, dim=1).argmax(dim=1) == target).sum().float() / float( target.size(0) )
