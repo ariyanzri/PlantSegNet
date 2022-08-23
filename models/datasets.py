@@ -63,3 +63,44 @@ class SorghumDataset(data.Dataset):
         f = h5py.File(self.h5_filename,'r')
         name = f['names'][index].decode("utf-8")
         return name
+
+
+class LeafDataset(data.Dataset):
+    ''''
+    Leaf label guide:
+        * 0 --> single leaf
+        * 1 --> double leaf
+    '''
+    def __init__(self, h5_filename):
+        super().__init__()
+        self.h5_filename=h5_filename
+        self.length = -1
+
+    def __getitem__(self, index):
+        f = h5py.File(self.h5_filename,'r')
+        points = f['points'][index]
+
+        # Note leaf counts are expected to be either 1 or 2
+        is_single_leaf = 2 - f['leaf_count'][index]
+        
+        f.close()
+
+        return (
+            torch.from_numpy(points).float(),
+            torch.from_numpy(np.array(is_single_leaf)).type(torch.LongTensor)
+        )
+            
+
+    def __len__(self):
+        if self.length != -1:
+            return self.length
+        else:
+            f = h5py.File(self.h5_filename,'r')
+            self.length=len(f['points'])
+            f.close()
+            return self.length
+
+    def get_name(self,index):
+        f = h5py.File(self.h5_filename,'r')
+        name = f['names'][index].decode("utf-8")
+        return name

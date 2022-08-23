@@ -51,7 +51,11 @@ class SpaceSimilarityLossV2(nn.Module):
         target = torch.unsqueeze(target.float(),dim=-1)
         distances_gt = torch.cdist(target,target)
         
-        normalized_distance_gt = torch.where(distances_gt==0,torch.clamp(distance_pred-self.M1,min=0),torch.clamp(self.M2-distance_pred,min=0))
+        normalized_distance_gt = torch.where(
+            distances_gt==0,
+            torch.clamp(distance_pred - self.M1, min=0),
+            torch.clamp(self.M2 - distance_pred, min=0)
+            )
         
         return torch.mean(normalized_distance_gt)
 
@@ -82,3 +86,6 @@ class LeafMetrics(nn.Module):
         F = 2*(Precision*Recall)/(Precision+Recall)
 
         return Acc, Precision, Recall, F
+
+def binary_acc(out, target):
+    return (torch.softmax(out, dim=1).argmax(dim=1) == target).sum().float() / float( target.size(0) )
