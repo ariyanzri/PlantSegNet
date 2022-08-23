@@ -51,7 +51,11 @@ class SpaceSimilarityLossV2(nn.Module):
         target = torch.unsqueeze(target.float(),dim=-1)
         distances_gt = torch.cdist(target,target)
         
-        normalized_distance_gt = torch.where(distances_gt==0,torch.clamp(distance_pred-self.M1,min=0),torch.clamp(self.M2-distance_pred,min=0))
+        normalized_distance_gt = torch.where(
+            distances_gt==0,
+            torch.clamp(distance_pred - self.M1, min=0),
+            torch.clamp(self.M2 - distance_pred, min=0)
+            )
         
         return torch.mean(normalized_distance_gt)
 

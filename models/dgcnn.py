@@ -44,9 +44,11 @@ def get_graph_feature(x, k=20, idx=None, dim9=False):
 
 class DGCNNBinaryClass(nn.Module):
     def __init__(self, args):
+        print(args)
         super(DGCNNBinaryClass, self).__init__()
         self.args = args
         self.k = args.k
+        self.num_points = args.num_points
         
         self.bn1 = nn.BatchNorm2d(64)
         self.bn2 = nn.BatchNorm2d(64)
@@ -69,6 +71,7 @@ class DGCNNBinaryClass(nn.Module):
 
         self.flatten = nn.Flatten()
 
+        self.fc1 = nn.Linear(self.num_points * 256, 512)
         self.fc2 = nn.Linear(512, 512)
         self.fc3 = nn.Linear(512, 2)
 
@@ -76,12 +79,14 @@ class DGCNNBinaryClass(nn.Module):
 
         x = x.transpose(1,2)
 
+
         batch_size = x.size(0)
         num_points = x.size(2) 
 
         x = get_graph_feature(x, k=self.k)      # (batch_size, 3, num_points) -> (batch_size, 3*2, num_points, k)
         x = self.conv1(x)                       # (batch_size, 3*2, num_points, k) -> (batch_size, 64, num_points, k)
         x1 = x.max(dim=-1, keepdim=False)[0]    # (batch_size, 64, num_points, k) -> (batch_size, 64, num_points)
+
 
         x = get_graph_feature(x1, k=self.k)     # (batch_size, 64, num_points) -> (batch_size, 64*2, num_points, k)
         x = self.conv2(x)                       # (batch_size, 64*2, num_points, k) -> (batch_size, 64, num_points, k)
@@ -95,10 +100,10 @@ class DGCNNBinaryClass(nn.Module):
         x = self.conv4(x)                       # (batch_size, 128*2, num_points, k) -> (batch_size, 256, num_points, k)
         x4 = x.max(dim=-1, keepdim=False)[0]    # (batch_size, 256, num_points, k) -> (batch_size, 256, num_points)
 
+
         x = self.flatten(x4)
 
-        device = torch.device('cuda')
-        x5 = F.relu(nn.Linear(num_points*256, 512, device=device)(x))
+        x5 = F.relu(self.fc1(x))
         x6 = F.relu(self.fc2(x5))
         x7 = self.fc3(x6)
 

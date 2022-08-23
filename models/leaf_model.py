@@ -22,8 +22,8 @@ class SorghumPartNetLeaf(pl.LightningModule):
         self.lr_clip = 1e-5
         self.bnm_clip = 1e-2
 
-        MyStruct = namedtuple('args', 'k')
-        args = MyStruct(k=15)
+        MyStruct = namedtuple('args', ['k', 'num_points'])
+        args = MyStruct(k=15, num_points=self.hparams["num_points"])
 
         self.DGCNNBinaryClass = DGCNNBinaryClass(args)
 

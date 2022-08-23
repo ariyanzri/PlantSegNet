@@ -239,6 +239,7 @@ class SorghumPartNetInstance(pl.LightningModule):
         pred_leaf_features = self(points)
 
         criterion_cluster = SpaceSimilarityLossV2()
+
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
         leaf_metrics = LeafMetrics(self.hparams['leaf_space_threshold'])

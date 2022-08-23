@@ -201,4 +201,5 @@ def main():
     # main_ds(args)
     main_ply(args)
 
-main()
+if __name__ == "__main__":
+    main()
