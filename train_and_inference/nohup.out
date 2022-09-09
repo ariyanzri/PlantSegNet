@@ -1,0 +1,3 @@
+nohup: ignoring input
+/work/ariyanzarei/SorghumSegmentation/TreePartNet/pointnet2_ops_lib/pointnet2_ops/pointnet2_utils.py:15: UserWarning: Unable to load pointnet2_ops cpp extension. JIT Compiling.
+  warnings.warn("Unable to load pointnet2_ops cpp extension. JIT Compiling.")
