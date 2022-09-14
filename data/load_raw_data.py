@@ -83,9 +83,12 @@ def load_pcd_plyfile(path, index_to_use="leaf_index", down_sample_n=8000):
 
 def load_ply_file_points(path, n_points=8000):
     pcd = o3d.io.read_point_cloud(path)
+
     R = pcd.get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))
     pcd = pcd.rotate(R, center=pcd.get_center())
+
     points = np.array(pcd.points)
+    # points[:, 0], points[:, 1], points[:, 2] = points[:, 2], points[:, 0], points[:, 1]
 
     first_down_indexes = random.sample(
         np.arange(0, points.shape[0]).tolist(),
