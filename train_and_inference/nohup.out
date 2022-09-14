@@ -1,3 +1,985 @@
 nohup: ignoring input
 /work/ariyanzarei/SorghumSegmentation/TreePartNet/pointnet2_ops_lib/pointnet2_ops/pointnet2_utils.py:15: UserWarning: Unable to load pointnet2_ops cpp extension. JIT Compiling.
   warnings.warn("Unable to load pointnet2_ops cpp extension. JIT Compiling.")
+Using  epoch=16-step=31874.ckpt
+Using  epoch=9-step=9379.ckpt
+------------- (1/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  14
+------------- (2/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  106
+------------- (3/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (4/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  43
+------------- (5/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  101
+------------- (6/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  35
+------------- (7/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  52
+------------- (8/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  28
+------------- (9/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  50
+------------- (10/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  39
+------------- (11/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  39
+------------- (12/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  76
+------------- (13/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  23
+------------- (14/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  17
+------------- (15/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  60
+------------- (16/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  42
+------------- (17/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  95
+------------- (18/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  75
+------------- (19/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  33
+------------- (20/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  52
+------------- (21/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  68
+------------- (22/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (23/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  42
+------------- (24/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  92
+------------- (25/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (26/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  53
+------------- (27/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (28/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  93
+------------- (29/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  90
+------------- (30/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  94
+------------- (31/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  58
+------------- (32/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  15
+------------- (33/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  147
+------------- (34/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  88
+------------- (35/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  33
+------------- (36/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  79
+------------- (37/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  48
+------------- (38/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  101
+------------- (39/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  54
+------------- (40/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  51
+------------- (41/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  100
+------------- (42/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (43/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  25
+------------- (44/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (45/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (46/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  13
+------------- (47/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  21
+------------- (48/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  52
+------------- (49/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (50/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  20
+------------- (51/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  21
+------------- (52/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  91
+------------- (53/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  35
+------------- (54/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (55/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  47
+------------- (56/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  82
+------------- (57/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  29
+------------- (58/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  108
+------------- (59/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  47
+------------- (60/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  65
+------------- (61/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  58
+------------- (62/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  65
+------------- (63/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  39
+------------- (64/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  54
+------------- (65/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  100
+------------- (66/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  17
+------------- (67/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  18
+------------- (68/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  35
+------------- (69/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  17
+------------- (70/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (71/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  105
+------------- (72/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  26
+------------- (73/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  39
+------------- (74/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  82
+------------- (75/7461) -------------
+:: Point cloud with 35920 points loaded!
+Number of predicted leaf instances:  63
+------------- (76/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  44
+------------- (77/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  36
+------------- (78/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  76
+------------- (79/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  128
+------------- (80/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  84
+------------- (81/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  13
+------------- (82/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  76
+------------- (83/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  15
+------------- (84/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  38
+------------- (85/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  82
+------------- (86/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  67
+------------- (87/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  32
+------------- (88/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (89/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  16
+------------- (90/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  87
+------------- (91/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  64
+------------- (92/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  46
+------------- (93/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  49
+------------- (94/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  5
+------------- (95/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  20
+------------- (96/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  37
+------------- (97/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (98/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  18
+------------- (99/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (100/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  98
+------------- (101/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  56
+------------- (102/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (103/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  136
+------------- (104/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  49
+------------- (105/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  56
+------------- (106/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  87
+------------- (107/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  117
+------------- (108/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (109/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  127
+------------- (110/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  86
+------------- (111/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  42
+------------- (112/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  26
+------------- (113/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  79
+------------- (114/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (115/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  85
+------------- (116/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  16
+------------- (117/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  21
+------------- (118/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  21
+------------- (119/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (120/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  65
+------------- (121/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  58
+------------- (122/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (123/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  21
+------------- (124/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  74
+------------- (125/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  42
+------------- (126/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (127/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (128/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  74
+------------- (129/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  77
+------------- (130/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  97
+------------- (131/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  80
+------------- (132/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  75
+------------- (133/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  47
+------------- (134/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  67
+------------- (135/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (136/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  60
+------------- (137/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  103
+------------- (138/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  55
+------------- (139/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  81
+------------- (140/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  42
+------------- (141/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  65
+------------- (142/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  76
+------------- (143/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  66
+------------- (144/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  47
+------------- (145/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  104
+------------- (146/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  84
+------------- (147/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  112
+------------- (148/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (149/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  62
+------------- (150/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (151/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  43
+------------- (152/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  94
+------------- (153/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  99
+------------- (154/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  68
+------------- (155/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  49
+------------- (156/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  29
+------------- (157/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  57
+------------- (158/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  65
+------------- (159/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  32
+------------- (160/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  64
+------------- (161/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  17
+------------- (162/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  48
+------------- (163/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  60
+------------- (164/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  84
+------------- (165/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  90
+------------- (166/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  72
+------------- (167/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  161
+------------- (168/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  55
+------------- (169/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  40
+------------- (170/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (171/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  33
+------------- (172/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  43
+------------- (173/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  86
+------------- (174/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (175/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  54
+------------- (176/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  54
+------------- (177/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  60
+------------- (178/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  86
+------------- (179/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (180/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  18
+------------- (181/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  83
+------------- (182/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  29
+------------- (183/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  28
+------------- (184/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (185/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  149
+------------- (186/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  79
+------------- (187/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  39
+------------- (188/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  113
+------------- (189/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  47
+------------- (190/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (191/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  63
+------------- (192/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  60
+------------- (193/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  76
+------------- (194/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  23
+------------- (195/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  14
+------------- (196/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  109
+------------- (197/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  39
+------------- (198/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  112
+------------- (199/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  25
+------------- (200/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  46
+------------- (201/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  20
+------------- (202/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  40
+------------- (203/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  110
+------------- (204/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  46
+------------- (205/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  50
+------------- (206/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (207/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (208/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (209/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  17
+------------- (210/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  49
+------------- (211/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  102
+------------- (212/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  80
+------------- (213/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  55
+------------- (214/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  71
+------------- (215/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  38
+------------- (216/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  23
+------------- (217/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  71
+------------- (218/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  114
+------------- (219/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  26
+------------- (220/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  67
+------------- (221/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  57
+------------- (222/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  36
+------------- (223/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  68
+------------- (224/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  43
+------------- (225/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  119
+------------- (226/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  26
+------------- (227/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  91
+------------- (228/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  171
+------------- (229/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  89
+------------- (230/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (231/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  107
+------------- (232/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (233/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  48
+------------- (234/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  62
+------------- (235/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  21
+------------- (236/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  86
+------------- (237/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  66
+------------- (238/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  51
+------------- (239/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  58
+------------- (240/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  98
+------------- (241/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  52
+------------- (242/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  96
+------------- (243/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  44
+------------- (244/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  74
+------------- (245/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  53
+------------- (246/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (247/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  42
+------------- (248/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (249/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  73
+------------- (250/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  76
+------------- (251/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  35
+------------- (252/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  36
+------------- (253/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  88
+------------- (254/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  29
+------------- (255/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  50
+------------- (256/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  80
+------------- (257/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  50
+------------- (258/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  15
+------------- (259/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (260/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (261/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  133
+------------- (262/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  83
+------------- (263/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (264/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  12
+------------- (265/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  65
+------------- (266/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  127
+------------- (267/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  62
+------------- (268/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  71
+------------- (269/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  23
+------------- (270/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  84
+------------- (271/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  94
+------------- (272/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  18
+------------- (273/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  16
+------------- (274/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  71
+------------- (275/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  27
+------------- (276/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  31
+------------- (277/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  103
+------------- (278/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  46
+------------- (279/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  122
+------------- (280/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  80
+------------- (281/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  51
+------------- (282/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  70
+------------- (283/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  44
+------------- (284/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (285/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  73
+------------- (286/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  68
+------------- (287/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (288/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  138
+------------- (289/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  60
+------------- (290/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  45
+------------- (291/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  68
+------------- (292/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  49
+------------- (293/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  94
+------------- (294/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (295/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  99
+------------- (296/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  26
+------------- (297/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  52
+------------- (298/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  24
+------------- (299/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  31
+------------- (300/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (301/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  73
+------------- (302/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  26
+------------- (303/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  78
+------------- (304/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  34
+------------- (305/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  69
+------------- (306/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (307/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  106
+------------- (308/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  58
+------------- (309/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  33
+------------- (310/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  9
+------------- (311/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  94
+------------- (312/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  20
+------------- (313/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  30
+------------- (314/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  90
+------------- (315/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  38
+------------- (316/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  32
+------------- (317/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  61
+------------- (318/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  66
+------------- (319/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  58
+------------- (320/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  67
+------------- (321/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  44
+------------- (322/7461) -------------
+:: Point cloud with 50000 points loaded!
+Number of predicted leaf instances:  10
+Traceback (most recent call last):
+  File "predict_and_save_batch.py", line 137, in <module>
+    main()
+  File "predict_and_save_batch.py", line 133, in main
+    predict_batch(args)
+  File "predict_and_save_batch.py", line 111, in predict_batch
+    ) = predict_downsampled(points, semantic_model, instance_model)
+  File "/net/i01/work/ariyanzarei/SorghumSegmentation/SorghumPartNet/train_and_inference/predict_and_visualize.py", line 136, in predict_downsampled
+    ply_instance = create_ply_pcd_from_points_with_labels(points, pred_final_cluster)
+  File "/net/i01/work/ariyanzarei/SorghumSegmentation/SorghumPartNet/train_and_inference/../data/utils.py", line 89, in create_ply_pcd_from_points_with_labels
+    d_colors = distinct_colors(len(list(set(labels))))
+  File "/net/i01/work/ariyanzarei/SorghumSegmentation/SorghumPartNet/train_and_inference/../data/utils.py", line 20, in distinct_colors
+    for i in np.arange(0, 1, 1.0 / n):
+ZeroDivisionError: float division by zero
