@@ -33,10 +33,7 @@ class SorghumPartNetSemantic(pl.LightningModule):
         self.lr_clip = 1e-5
         self.bnm_clip = 1e-2
 
-        MyStruct = namedtuple("args", "k")
-        args = MyStruct(k=15)
-
-        self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(args)
+        self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(15)
 
         self.save_hyperparameters()
 

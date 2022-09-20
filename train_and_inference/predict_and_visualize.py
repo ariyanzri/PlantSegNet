@@ -127,7 +127,7 @@ def predict_downsampled(points, semantic_model, instance_model, dist=5):
     points = points.cpu().detach().numpy()
 
     ply_semantic = create_ply_pcd_from_points_with_labels(
-        points, pred_semantic_label_labels
+        points, pred_semantic_label_labels, is_semantic=True
     )
 
     points = points[pred_semantic_label_labels == 1, :]
@@ -154,7 +154,9 @@ def pred_full_size(
             mode = stats.mode(downsampled_semantic[sorted_distances[:k]])[0]
             semantic_full[i] = mode
 
-    semantic_ply = create_ply_pcd_from_points_with_labels(full_points, semantic_full)
+    semantic_ply = create_ply_pcd_from_points_with_labels(
+        full_points, semantic_full, is_semantic=True
+    )
 
     downsampled_focal_points = downsampled_points[downsampled_semantic == 1]
     focal_points = full_points[semantic_full == 1]

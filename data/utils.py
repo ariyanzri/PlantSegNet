@@ -80,13 +80,16 @@ def get_is_focal_plant(index):
     return is_focal.squeeze()
 
 
-def create_ply_pcd_from_points_with_labels(points, labels):
+def create_ply_pcd_from_points_with_labels(points, labels, is_semantic=False):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
     pcd.paint_uniform_color([0, 0, 0])
     colors = np.array(pcd.colors)
 
-    d_colors = distinct_colors(len(list(set(labels))))
+    if is_semantic:
+        d_colors = [[0.3, 0.1, 0], [0, 0.7, 0], [0, 0, 0.7]]
+    else:
+        d_colors = distinct_colors(len(list(set(labels))))
 
     for i, l in enumerate(list(set(labels))):
         colors[labels == l, :] = d_colors[i]
