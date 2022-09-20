@@ -43,9 +43,9 @@ def create_html(input_directory, output_dir, output_folder_name, col=2, screen_w
         f.write(html_text)
 
 
-create_html(
-    "/space/ariyanzarei/sorghum_segmentation/results/2020-08-06",
-    "/space/ariyanzarei/sorghum_segmentation/results/",
-    "test_html",
-    col=2,
-)
+# create_html(
+#     "/space/ariyanzarei/sorghum_segmentation/results/2020-08-06",
+#     "/space/ariyanzarei/sorghum_segmentation/results/",
+#     "test_html",
+#     col=2,
+# )

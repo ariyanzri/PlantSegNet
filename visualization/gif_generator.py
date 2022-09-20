@@ -88,4 +88,4 @@ def generate_bulk_gif(input_directory):
         print(f":: Generated gif for {folder}")
 
 
-generate_bulk_gif("/space/ariyanzarei/sorghum_segmentation/results/2020-08-06")
+# generate_bulk_gif("/space/ariyanzarei/sorghum_segmentation/results/2020-08-06")
