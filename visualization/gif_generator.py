@@ -39,10 +39,11 @@ class PointCloudVisualizer:
     def save_visualization(self, points, labels, file_path):
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
+        fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.set_zticklabels([])
-        plt.grid(True)
+        plt.grid(False)
 
         ims = []
         for rot in [self.__R_z]:
@@ -51,7 +52,7 @@ class PointCloudVisualizer:
                 ims.append([ax.scatter(rp[:, 0], rp[:, 1], rp[:, 2], c=labels, s=1)])
 
         ani = animation.ArtistAnimation(fig, ims, blit=True)
-        ani.save(file_path, writer="pillow", fps=10)
+        ani.save(file_path, writer="pillow", fps=7)
         plt.close(fig)
 
 

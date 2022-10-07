@@ -39,12 +39,20 @@ class SorghumPartNetSemantic(pl.LightningModule):
 
     def forward(self, xyz):
 
-        # Normalization (min max)
-        mins, _ = torch.min(xyz, axis=1)
-        maxs, _ = torch.max(xyz, axis=1)
-        mins = mins.unsqueeze(1)
-        maxs = maxs.unsqueeze(1)
-        xyz = (xyz - mins) / (maxs - mins) - 0.5
+        # Normalization
+        if self.hparams["normalization"] == "mean-std":
+            mean = torch.mean(xyz, axis=1)
+            mean = mean.unsqueeze(1).repeat(1, xyz.shape[1], 1)
+            std = torch.std(xyz, axis=1)
+            std = std.unsqueeze(1).repeat(1, xyz.shape[1], 1)
+            xyz = (xyz - mean) / std
+
+        elif self.hparams["normalization"] == "min-max":
+            mins, _ = torch.min(xyz, axis=1)
+            maxs, _ = torch.max(xyz, axis=1)
+            mins = mins.unsqueeze(1)
+            maxs = maxs.unsqueeze(1)
+            xyz = (xyz - mins) / (maxs - mins) - 0.5
 
         # Semantic Label Prediction
         semantic_label_pred = self.DGCNN_semantic_segmentor(xyz)
@@ -204,12 +212,20 @@ class SorghumPartNetInstance(pl.LightningModule):
 
     def forward(self, xyz):
 
-        # Normalization (min max)
-        mins, _ = torch.min(xyz, axis=1)
-        maxs, _ = torch.max(xyz, axis=1)
-        mins = mins.unsqueeze(1)
-        maxs = maxs.unsqueeze(1)
-        xyz = (xyz - mins) / (maxs - mins) - 0.5
+        # Normalization
+        if self.hparams["normalization"] == "mean-std":
+            mean = torch.mean(xyz, axis=1)
+            mean = mean.unsqueeze(1).repeat(1, xyz.shape[1], 1)
+            std = torch.std(xyz, axis=1)
+            std = std.unsqueeze(1).repeat(1, xyz.shape[1], 1)
+            xyz = (xyz - mean) / std
+
+        elif self.hparams["normalization"] == "min-max":
+            mins, _ = torch.min(xyz, axis=1)
+            maxs, _ = torch.max(xyz, axis=1)
+            mins = mins.unsqueeze(1)
+            maxs = maxs.unsqueeze(1)
+            xyz = (xyz - mins) / (maxs - mins) - 0.5
 
         # Instance
         dgcnn_features = self.DGCNN_feature_space(xyz)

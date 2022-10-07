@@ -39,8 +39,8 @@ def get_args():
         help="The point cloud index to use from the dataset",
         metavar="index",
         required=False,
-        type=int,
-        default=452,
+        type=str,
+        default="452",
     )
 
     parser.add_argument(
@@ -206,7 +206,7 @@ def load_model(model_name, version):
         version = sorted(versions)[-1].split("_")[-1]
 
     path_all_checkpoints = f"/space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/{model_name}/lightning_logs/version_{version}/checkpoints"
-    path = os.listdir(path_all_checkpoints)[0]
+    path = os.listdir(path_all_checkpoints)[-1]
     print("Using ", path)
     model = load_model_chkpoint(model_name, os.path.join(path_all_checkpoints, path))
     return model
