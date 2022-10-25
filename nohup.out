@@ -1,2 +1,0 @@
-nohup: ignoring input
-python: can't open file 'predict_and_save_batch.py': [Errno 2] No such file or directory

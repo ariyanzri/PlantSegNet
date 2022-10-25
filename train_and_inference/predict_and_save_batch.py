@@ -159,6 +159,8 @@ def predict_batch(args):
     arguments = []
     for i, pcd_name in enumerate(list_pcd_files):
         arguments.append((args, pcd_name))
+        # if i >= 10:
+        #     break
 
         # print(f"------------- ({i+1}/{n}) -------------")
         # path = os.path.join(args.path, pcd_name)
@@ -208,7 +210,7 @@ def predict_batch(args):
 def main():
     args = get_args()
 
-    # predict_batch(args)
+    predict_batch(args)
     create_html(args.output, args.output, "visualization")
     create_html(args.output, args.output, "visualization")
 

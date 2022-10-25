@@ -59,7 +59,7 @@ def get_args():
         metavar="full_size",
         required=False,
         type=bool,
-        default=False,
+        default=True,
     )
 
     parser.add_argument(
