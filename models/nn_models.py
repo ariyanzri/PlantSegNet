@@ -9,7 +9,7 @@ import torch.optim.lr_scheduler as lr_sched
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import math
-from models.datasets import SorghumDataset
+from models.datasets import SorghumDataset, SorghumDatasetWithNormals
 from models.dgcnn import *
 from collections import namedtuple
 from models.utils import (
@@ -99,7 +99,10 @@ class SorghumPartNetSemantic(pl.LightningModule):
         return [optimizer], [lr_scheduler, bnm_scheduler]
 
     def _build_dataloader(self, ds_path, shuff=True):
-        dataset = SorghumDataset(ds_path)
+        if self.hparams["use_normals"]:
+            dataset = SorghumDatasetWithNormals(ds_path, True)
+        else:
+            dataset = SorghumDataset(ds_path)
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff
         )
@@ -109,7 +112,10 @@ class SorghumPartNetSemantic(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["train_data"], shuff=True)
 
     def training_step(self, batch, batch_idx):
-        points, _, semantic_label, _, _ = batch
+        if self.hparams["use_normals"]:
+            points, semantic_label = batch
+        else:
+            points, _, semantic_label, _, _ = batch
 
         pred_semantic_label = self(points)
 
@@ -144,7 +150,10 @@ class SorghumPartNetSemantic(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["val_data"], shuff=False)
 
     def validation_step(self, batch, batch_idx):
-        points, _, semantic_label, _, _ = batch
+        if self.hparams["use_normals"]:
+            points, semantic_label = batch
+        else:
+            points, _, semantic_label, _, _ = batch
 
         pred_semantic_label = self(points)
 
@@ -277,7 +286,11 @@ class SorghumPartNetInstance(pl.LightningModule):
         return [optimizer], [lr_scheduler, bnm_scheduler]
 
     def _build_dataloader(self, ds_path, shuff=True):
-        dataset = SorghumDataset(ds_path)
+        if self.hparams["use_normals"]:
+            dataset = SorghumDatasetWithNormals(ds_path, True)
+        else:
+            dataset = SorghumDataset(ds_path)
+
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff
         )
@@ -287,7 +300,10 @@ class SorghumPartNetInstance(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["train_data"], shuff=True)
 
     def training_step(self, batch, batch_idx):
-        points, _, _, _, leaf = batch
+        if self.hparams["use_normals"]:
+            points, leaf = batch
+        else:
+            points, _, _, _, leaf = batch
 
         pred_leaf_features = self(points)
 
@@ -322,7 +338,10 @@ class SorghumPartNetInstance(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["val_data"], shuff=False)
 
     def validation_step(self, batch, batch_idx):
-        points, _, _, _, leaf = batch
+        if self.hparams["use_normals"]:
+            points, leaf = batch
+        else:
+            points, _, _, _, leaf = batch
 
         pred_leaf_features = self(points)
 

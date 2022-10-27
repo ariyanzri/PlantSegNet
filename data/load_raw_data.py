@@ -81,6 +81,95 @@ def load_pcd_plyfile(path, index_to_use="leaf_index", down_sample_n=8000):
         return None
 
 
+def load_pcd_plyfile_new_approach(
+    path, is_instance, down_sample_n=8000, std_coef=0.025
+):
+    try:
+        with open(path, "rb") as f:
+            plydata = PlyData.read(f)
+            points = np.asarray(np.array(plydata.elements[0].data).tolist())
+            points_full = np.asarray(np.array(plydata.elements[0].data).tolist())
+            leaf_index = np.asarray(np.array(plydata.elements[2].data).tolist())
+            ground_index = np.asarray(np.array(plydata.elements[6].data).tolist())
+            is_focal_plant = np.asarray(np.array(plydata.elements[4].data).tolist())
+
+            if down_sample_n is None:
+                down_sample_n = points_full.shape[0]
+
+            if not is_instance:
+                downsample_indexes = random.sample(
+                    np.arange(0, points.shape[0]).tolist(),
+                    min(down_sample_n, points.shape[0]),
+                )
+                points = points[downsample_indexes]
+                is_focal_plant = is_focal_plant[downsample_indexes].squeeze()
+                ground_index = ground_index[downsample_indexes].squeeze()
+
+                label = np.zeros(is_focal_plant.shape)
+                label[(is_focal_plant == 0) & (ground_index == 0)] = 2
+                label[(is_focal_plant == 1) & (ground_index == 0)] = 1
+
+                std_points = np.repeat(
+                    np.expand_dims(np.std(points, 0), 0), points.shape[0], 0
+                )
+                points += np.random.normal(0, std_points * std_coef, size=points.shape)
+
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(points)
+                pcd.estimate_normals(
+                    search_param=o3d.geometry.KDTreeSearchParamHybrid(
+                        radius=0.1, max_nn=30
+                    )
+                )
+                normals = np.asarray(pcd.normals)
+
+            else:
+                is_focal_plant = is_focal_plant.squeeze()
+                ground_index = ground_index.squeeze()
+
+                points = points[(is_focal_plant == 1) & (ground_index == 0), :]
+                points_full = points_full[
+                    (is_focal_plant == 1) & (ground_index == 0), :
+                ]
+                label = leaf_index[(is_focal_plant == 1) & (ground_index == 0)]
+
+                std_points = np.repeat(
+                    np.expand_dims(np.std(points, 0), 0), points.shape[0], 0
+                )
+                points += np.random.normal(0, std_points * std_coef, size=points.shape)
+
+                points_shape = points.shape[0]
+
+                downsample_indexes = np.random.choice(
+                    np.arange(0, points.shape[0]).tolist(),
+                    down_sample_n,
+                    replace=(True if points_shape < down_sample_n else False),
+                )
+
+                points = points[downsample_indexes]
+                label = label[downsample_indexes]
+
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(points)
+                pcd.estimate_normals(
+                    search_param=o3d.geometry.KDTreeSearchParamHybrid(
+                        radius=0.1, max_nn=30
+                    )
+                )
+                normals = np.asarray(pcd.normals)
+
+        return {
+            "points_full": points_full,
+            "points": points,
+            "labels": label,
+            "normals": normals,
+        }
+
+    except Exception as e:
+        print(e)
+        return None
+
+
 def load_ply_file_points(path, n_points=8000, full_points=50000):
     pcd = o3d.io.read_point_cloud(path)
 

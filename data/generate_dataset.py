@@ -194,13 +194,211 @@ def generate_h5py(
             f.create_dataset(k, data=test_dataset[k])
 
 
+def generate_h5py_semantic(
+    path_raw_data,
+    path_h5py,
+    point_no=8000,
+    split_ratio={"tr": 0.6, "va": 0.2, "te": 0.2},
+):
+    assert sum([split_ratio[k] for k in split_ratio.keys()]) == 1
+
+    files = os.listdir(path_raw_data)
+
+    dataset = {"points": [], "normals": [], "labels": []}
+
+    for i, f in enumerate(files):
+        pcd = load_pcd_plyfile_new_approach(
+            os.path.join(path_raw_data, f), False, down_sample_n=point_no
+        )
+        if pcd is None:
+            print(f">>> Error occured. Ignoring {f}.")
+            continue
+
+        dataset["points"].append(pcd["points"])
+        dataset["labels"].append(pcd["labels"])
+        dataset["normals"].append(pcd["normals"])
+        print(f":: {i}/{len(files)}", end="\r")
+
+    dataset["points"] = np.stack(dataset["points"], 0)
+    dataset["points"] = np.array(dataset["points"])
+    dataset["normals"] = np.stack(dataset["normals"], 0)
+    dataset["normals"] = np.array(dataset["normals"])
+    dataset["labels"] = np.array(dataset["labels"])
+
+    # print(dataset['points'])
+    train_dataset = {k: [] for k in dataset.keys()}
+    validation_dataset = {k: [] for k in dataset.keys()}
+    test_dataset = {k: [] for k in dataset.keys()}
+
+    (
+        train_dataset["points"],
+        test_dataset["points"],
+        train_dataset["normals"],
+        test_dataset["normals"],
+        train_dataset["labels"],
+        test_dataset["labels"],
+    ) = train_test_split(
+        dataset["points"],
+        dataset["normals"],
+        dataset["labels"],
+        test_size=split_ratio["te"],
+        random_state=42,
+    )
+
+    (
+        train_dataset["points"],
+        validation_dataset["points"],
+        train_dataset["normals"],
+        validation_dataset["normals"],
+        train_dataset["labels"],
+        validation_dataset["labels"],
+    ) = train_test_split(
+        train_dataset["points"],
+        train_dataset["normals"],
+        train_dataset["labels"],
+        test_size=split_ratio["va"] / (1 - split_ratio["te"]),
+        random_state=42,
+    )
+
+    for k in train_dataset.keys():
+        train_dataset[k] = np.array(train_dataset[k])
+
+    for k in validation_dataset.keys():
+        validation_dataset[k] = np.array(validation_dataset[k])
+
+    for k in test_dataset.keys():
+        test_dataset[k] = np.array(test_dataset[k])
+
+    print(train_dataset["points"].shape)
+    print(validation_dataset["points"].shape)
+    print(test_dataset["points"].shape)
+
+    with h5py.File(
+        os.path.join(path_h5py, "semantic_segmentation_train.hdf5"), "w"
+    ) as f:
+        for k in train_dataset.keys():
+            f.create_dataset(k, data=train_dataset[k])
+
+    with h5py.File(
+        os.path.join(path_h5py, "semantic_segmentation_validation.hdf5"), "w"
+    ) as f:
+        for k in validation_dataset.keys():
+            f.create_dataset(k, data=validation_dataset[k])
+
+    with h5py.File(
+        os.path.join(path_h5py, "semantic_segmentation_test.hdf5"), "w"
+    ) as f:
+        for k in test_dataset.keys():
+            f.create_dataset(k, data=test_dataset[k])
+
+
+def generate_h5py_instance(
+    path_raw_data,
+    path_h5py,
+    point_no=8000,
+    split_ratio={"tr": 0.6, "va": 0.2, "te": 0.2},
+):
+    assert sum([split_ratio[k] for k in split_ratio.keys()]) == 1
+
+    files = os.listdir(path_raw_data)
+
+    dataset = {"points": [], "normals": [], "labels": []}
+
+    for i, f in enumerate(files):
+        pcd = load_pcd_plyfile_new_approach(
+            os.path.join(path_raw_data, f), True, down_sample_n=point_no
+        )
+        if pcd is None:
+            print(f">>> Error occured. Ignoring {f}.")
+            continue
+
+        dataset["points"].append(pcd["points"])
+        dataset["labels"].append(pcd["labels"])
+        dataset["normals"].append(pcd["normals"])
+        print(f":: {i}/{len(files)}", end="\r")
+
+    dataset["points"] = np.stack(dataset["points"], 0)
+    dataset["points"] = np.array(dataset["points"])
+    dataset["normals"] = np.stack(dataset["normals"], 0)
+    dataset["normals"] = np.array(dataset["normals"])
+    dataset["labels"] = np.array(dataset["labels"])
+
+    # print(dataset['points'])
+    train_dataset = {k: [] for k in dataset.keys()}
+    validation_dataset = {k: [] for k in dataset.keys()}
+    test_dataset = {k: [] for k in dataset.keys()}
+
+    (
+        train_dataset["points"],
+        test_dataset["points"],
+        train_dataset["normals"],
+        test_dataset["normals"],
+        train_dataset["labels"],
+        test_dataset["labels"],
+    ) = train_test_split(
+        dataset["points"],
+        dataset["normals"],
+        dataset["labels"],
+        test_size=split_ratio["te"],
+        random_state=42,
+    )
+
+    (
+        train_dataset["points"],
+        validation_dataset["points"],
+        train_dataset["normals"],
+        validation_dataset["normals"],
+        train_dataset["labels"],
+        validation_dataset["labels"],
+    ) = train_test_split(
+        train_dataset["points"],
+        train_dataset["normals"],
+        train_dataset["labels"],
+        test_size=split_ratio["va"] / (1 - split_ratio["te"]),
+        random_state=42,
+    )
+
+    for k in train_dataset.keys():
+        train_dataset[k] = np.array(train_dataset[k])
+
+    for k in validation_dataset.keys():
+        validation_dataset[k] = np.array(validation_dataset[k])
+
+    for k in test_dataset.keys():
+        test_dataset[k] = np.array(test_dataset[k])
+
+    print(train_dataset["points"].shape)
+    print(validation_dataset["points"].shape)
+    print(test_dataset["points"].shape)
+
+    with h5py.File(
+        os.path.join(path_h5py, "instance_segmentation_train.hdf5"), "w"
+    ) as f:
+        for k in train_dataset.keys():
+            f.create_dataset(k, data=train_dataset[k])
+
+    with h5py.File(
+        os.path.join(path_h5py, "instance_segmentation_validation.hdf5"), "w"
+    ) as f:
+        for k in validation_dataset.keys():
+            f.create_dataset(k, data=validation_dataset[k])
+
+    with h5py.File(
+        os.path.join(path_h5py, "instance_segmentation_test.hdf5"), "w"
+    ) as f:
+        for k in test_dataset.keys():
+            f.create_dataset(k, data=test_dataset[k])
+
+
 def main():
     args = get_args()
-    generate_h5py(
-        args.input,
-        args.output,
-        args.label,
-    )
+    # generate_h5py(
+    #     args.input,
+    #     args.output,
+    #     args.label,
+    # )
+    generate_h5py_semantic(args.input, args.output, point_no=8000)
+    generate_h5py_instance(args.input, args.output, point_no=8000)
 
 
 main()
