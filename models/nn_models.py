@@ -15,6 +15,7 @@ from collections import namedtuple
 from models.utils import (
     BNMomentumScheduler,
     SpaceSimilarityLossV2,
+    SpaceSimilarityLossV3,
     LeafMetrics,
 )
 from models.leaf_model import SorghumPartNetLeaf
@@ -33,7 +34,12 @@ class SorghumPartNetSemantic(pl.LightningModule):
         self.lr_clip = 1e-5
         self.bnm_clip = 1e-2
 
-        self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(15)
+        self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(
+            15,
+            input_dim=(
+                3 if "input_dim" not in self.hparams else self.hparams["input_dim"]
+            ),
+        ).double()
 
         self.save_hyperparameters()
 
@@ -99,10 +105,11 @@ class SorghumPartNetSemantic(pl.LightningModule):
         return [optimizer], [lr_scheduler, bnm_scheduler]
 
     def _build_dataloader(self, ds_path, shuff=True):
-        if self.hparams["use_normals"]:
-            dataset = SorghumDatasetWithNormals(ds_path, True)
-        else:
+        if "use_normals" not in self.hparams:
             dataset = SorghumDataset(ds_path)
+        else:
+            dataset = SorghumDatasetWithNormals(ds_path, self.hparams["use_normals"])
+
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff
         )
@@ -112,10 +119,10 @@ class SorghumPartNetSemantic(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["train_data"], shuff=True)
 
     def training_step(self, batch, batch_idx):
-        if self.hparams["use_normals"]:
-            points, semantic_label = batch
-        else:
+        if "use_normals" not in self.hparams:
             points, _, semantic_label, _, _ = batch
+        else:
+            points, semantic_label = batch
 
         pred_semantic_label = self(points)
 
@@ -150,10 +157,10 @@ class SorghumPartNetSemantic(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["val_data"], shuff=False)
 
     def validation_step(self, batch, batch_idx):
-        if self.hparams["use_normals"]:
-            points, semantic_label = batch
-        else:
+        if "use_normals" not in self.hparams:
             points, _, semantic_label, _, _ = batch
+        else:
+            points, semantic_label = batch
 
         pred_semantic_label = self(points)
 
@@ -217,7 +224,9 @@ class SorghumPartNetInstance(pl.LightningModule):
         MyStruct = namedtuple("args", "k")
         args = MyStruct(k=15)
 
-        self.DGCNN_feature_space = DGCNNFeatureSpace(args)
+        self.DGCNN_feature_space = DGCNNFeatureSpace(
+            args, (3 if "input_dim" not in self.hparams else self.hparams["input_dim"])
+        ).double()
 
         self.save_hyperparameters()
 
@@ -286,10 +295,10 @@ class SorghumPartNetInstance(pl.LightningModule):
         return [optimizer], [lr_scheduler, bnm_scheduler]
 
     def _build_dataloader(self, ds_path, shuff=True):
-        if self.hparams["use_normals"]:
-            dataset = SorghumDatasetWithNormals(ds_path, True)
-        else:
+        if "use_normals" not in self.hparams:
             dataset = SorghumDataset(ds_path)
+        else:
+            dataset = SorghumDatasetWithNormals(ds_path, self.hparams["use_normals"])
 
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff
@@ -300,14 +309,17 @@ class SorghumPartNetInstance(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["train_data"], shuff=True)
 
     def training_step(self, batch, batch_idx):
-        if self.hparams["use_normals"]:
-            points, leaf = batch
-        else:
+        if "use_normals" not in self.hparams:
             points, _, _, _, leaf = batch
+        else:
+            points, leaf = batch
 
         pred_leaf_features = self(points)
 
-        criterion_cluster = SpaceSimilarityLossV2()
+        if "loss_fn" in self.hparams and self.hparams["loss_fn"] == "v3":
+            criterion_cluster = SpaceSimilarityLossV3(points)
+        else:
+            criterion_cluster = SpaceSimilarityLossV2()
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
@@ -338,14 +350,18 @@ class SorghumPartNetInstance(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["val_data"], shuff=False)
 
     def validation_step(self, batch, batch_idx):
-        if self.hparams["use_normals"]:
-            points, leaf = batch
-        else:
+        if "use_normals" not in self.hparams:
             points, _, _, _, leaf = batch
+        else:
+            points, leaf = batch
 
         pred_leaf_features = self(points)
 
-        criterion_cluster = SpaceSimilarityLossV2()
+        if "loss_fn" in self.hparams and self.hparams["loss_fn"] == "v3":
+            criterion_cluster = SpaceSimilarityLossV3(points)
+        else:
+            criterion_cluster = SpaceSimilarityLossV2()
+
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
         leaf_metrics = LeafMetrics(self.hparams["leaf_space_threshold"])

@@ -11,7 +11,11 @@ sys.path.append("..")
 from models.nn_models import *
 from models.datasets import SorghumDataset
 from data.utils import create_ply_pcd_from_points_with_labels
-from data.load_raw_data import load_pcd_plyfile, load_ply_file_points
+from data.load_raw_data import (
+    load_pcd_plyfile,
+    load_ply_file_points,
+    load_pcd_plyfile_new_approach,
+)
 from scipy.spatial.distance import cdist
 from scipy import stats
 import argparse
@@ -96,12 +100,33 @@ def get_args():
 
 
 def predict_downsampled(points, semantic_model, instance_model, dist=5):
-    pred_semantic_label = semantic_model(torch.unsqueeze(points, dim=0).cuda())
-    pred_instance_features = instance_model(torch.unsqueeze(points, dim=0).cuda())
+    if (
+        "use_normals" in semantic_model.hparams
+        and semantic_model.hparams["use_normals"]
+    ):
+        pred_semantic_label = semantic_model(torch.unsqueeze(points, dim=0).cuda())
+    else:
+        pred_semantic_label = semantic_model(
+            torch.unsqueeze(points[:, :3], dim=0).cuda()
+        )
 
     pred_semantic_label = F.softmax(pred_semantic_label, dim=1)
     pred_semantic_label = pred_semantic_label[0].cpu().detach().numpy().T
     pred_semantic_label_labels = np.argmax(pred_semantic_label, 1)
+
+    instance_points = points[pred_semantic_label_labels == 1, :]
+
+    if (
+        "use_normals" in instance_model.hparams
+        and instance_model.hparams["use_normals"]
+    ):
+        pred_instance_features = instance_model(
+            torch.unsqueeze(instance_points, dim=0).cuda()
+        )
+    else:
+        pred_instance_features = instance_model(
+            torch.unsqueeze(instance_points[:, :3], dim=0).cuda()
+        )
 
     distance_pred = torch.cdist(pred_instance_features, pred_instance_features)
     distance_pred = distance_pred.cpu().detach().numpy().T
@@ -125,15 +150,15 @@ def predict_downsampled(points, semantic_model, instance_model, dist=5):
     print("Number of predicted leaf instances: ", len(list(set(pred_final_cluster))))
 
     points = points.cpu().detach().numpy()
+    instance_points = instance_points.cpu().detach().numpy()
 
     ply_semantic = create_ply_pcd_from_points_with_labels(
-        points, pred_semantic_label_labels, is_semantic=True
+        points[:, :3], pred_semantic_label_labels, is_semantic=True
     )
 
-    points = points[pred_semantic_label_labels == 1, :]
-    pred_final_cluster = pred_final_cluster[pred_semantic_label_labels == 1]
-
-    ply_instance = create_ply_pcd_from_points_with_labels(points, pred_final_cluster)
+    ply_instance = create_ply_pcd_from_points_with_labels(
+        instance_points[:, :3], pred_final_cluster
+    )
 
     return ply_semantic, ply_instance, pred_semantic_label_labels, pred_final_cluster
 
@@ -207,7 +232,8 @@ def load_model(model_name, version):
 
     path_all_checkpoints = f"/space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/{model_name}/lightning_logs/version_{version}/checkpoints"
     path = os.listdir(path_all_checkpoints)[-1]
-    print("Using ", path)
+    print("Using Version ", version, " and ", path)
+
     model = load_model_chkpoint(model_name, os.path.join(path_all_checkpoints, path))
     return model
 
@@ -243,13 +269,17 @@ def main_ply(args):
     path = os.path.join(args.path, f"{args.index}.ply")
 
     if args.type == 0:
-        pcd = load_pcd_plyfile(path)
+        pcd = load_pcd_plyfile_new_approach(path, False)
         points = torch.tensor(pcd["points"], dtype=torch.float64)
         points_full = torch.tensor(pcd["points_full"], dtype=torch.float64)
+        normals = torch.tensor(pcd["normals"], dtype=torch.float64)
+        points = torch.cat((points, normals), -1)
     else:
-        points_full, points = load_ply_file_points(path)
+        points_full, points, normals = load_ply_file_points(path)
         points = torch.tensor(points, dtype=torch.float64)
+        normals = torch.tensor(normals, dtype=torch.float64)
         points_full = torch.tensor(points_full, dtype=torch.float64)
+        points = torch.cat((points, normals), -1)
 
     print(f":: Point cloud with {points_full.shape[0]} points loaded!")
 
@@ -261,7 +291,7 @@ def main_ply(args):
     ) = predict_downsampled(points, semantic_model, instance_model)
 
     semantic_pcd, instance_pcd = pred_full_size(
-        points_full, points, downsampled_semantics, downsampled_instance
+        points_full, points[:, :3], downsampled_semantics, downsampled_instance
     )
 
     save_predicted(

@@ -143,7 +143,7 @@ class DGCNNBinaryClass(nn.Module):
 
 
 class DGCNNFeatureSpace(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, input_dim=3):
         super(DGCNNFeatureSpace, self).__init__()
         self.args = args
         self.k = args.k
@@ -154,7 +154,7 @@ class DGCNNFeatureSpace(nn.Module):
         self.bn4 = nn.BatchNorm2d(256)
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(6, 64, kernel_size=1, bias=False),
+            nn.Conv2d(input_dim * 2, 64, kernel_size=1, bias=False),
             self.bn1,
             nn.LeakyReLU(negative_slope=0.2),
         )
@@ -221,7 +221,7 @@ class DGCNNFeatureSpace(nn.Module):
 
 
 class DGCNNSemanticSegmentor(nn.Module):
-    def __init__(self, k, output_dim=3):
+    def __init__(self, k, output_dim=3, input_dim=3):
         super(DGCNNSemanticSegmentor, self).__init__()
         self.k = k
 
@@ -231,7 +231,7 @@ class DGCNNSemanticSegmentor(nn.Module):
         self.bn4 = nn.BatchNorm2d(output_dim)
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(6, 64, kernel_size=1, bias=False),
+            nn.Conv2d(input_dim * 2, 64, kernel_size=1, bias=False),
             self.bn1,
             nn.LeakyReLU(negative_slope=0.2),
         )

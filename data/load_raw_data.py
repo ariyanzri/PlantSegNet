@@ -109,17 +109,10 @@ def load_pcd_plyfile_new_approach(
                 label[(is_focal_plant == 0) & (ground_index == 0)] = 2
                 label[(is_focal_plant == 1) & (ground_index == 0)] = 1
 
-                std_points = np.repeat(
-                    np.expand_dims(np.std(points, 0), 0), points.shape[0], 0
-                )
-                points += np.random.normal(0, std_points * std_coef, size=points.shape)
-
                 pcd = o3d.geometry.PointCloud()
                 pcd.points = o3d.utility.Vector3dVector(points)
                 pcd.estimate_normals(
-                    search_param=o3d.geometry.KDTreeSearchParamHybrid(
-                        radius=0.1, max_nn=30
-                    )
+                    search_param=o3d.geometry.KDTreeSearchParamRadius(0.05)
                 )
                 normals = np.asarray(pcd.normals)
 
@@ -132,11 +125,6 @@ def load_pcd_plyfile_new_approach(
                     (is_focal_plant == 1) & (ground_index == 0), :
                 ]
                 label = leaf_index[(is_focal_plant == 1) & (ground_index == 0)]
-
-                std_points = np.repeat(
-                    np.expand_dims(np.std(points, 0), 0), points.shape[0], 0
-                )
-                points += np.random.normal(0, std_points * std_coef, size=points.shape)
 
                 points_shape = points.shape[0]
 
@@ -152,9 +140,7 @@ def load_pcd_plyfile_new_approach(
                 pcd = o3d.geometry.PointCloud()
                 pcd.points = o3d.utility.Vector3dVector(points)
                 pcd.estimate_normals(
-                    search_param=o3d.geometry.KDTreeSearchParamHybrid(
-                        radius=0.1, max_nn=30
-                    )
+                    search_param=o3d.geometry.KDTreeSearchParamRadius(0.05)
                 )
                 normals = np.asarray(pcd.normals)
 
@@ -176,6 +162,11 @@ def load_ply_file_points(path, n_points=8000, full_points=50000):
     R = pcd.get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))
     pcd = pcd.rotate(R, center=pcd.get_center())
 
+    pcd.estimate_normals(
+        search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30)
+    )
+    normals = np.asarray(pcd.normals)
+
     points = np.array(pcd.points)
     # points[:, 0], points[:, 1], points[:, 2] = points[:, 2], points[:, 0], points[:, 1]
 
@@ -190,8 +181,9 @@ def load_ply_file_points(path, n_points=8000, full_points=50000):
         min(n_points, points.shape[0]),
     )
     down_sampled_points = points[downsample_indexes]
+    normals = normals[downsample_indexes]
 
-    return points, down_sampled_points
+    return points, down_sampled_points, normals
 
 
 def paint_pcd_into_o3d(plyfile_pcd, key):

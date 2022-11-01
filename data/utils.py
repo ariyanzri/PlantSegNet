@@ -19,8 +19,8 @@ def distinct_colors(n=200):
     colors = []
     for i in np.arange(0, 1, 1.0 / n):
         hue = i
-        saturation = random.random()
-        lightness = random.random()
+        saturation = 1
+        lightness = 0.5
 
         c = colorsys.hsv_to_rgb(hue, saturation, lightness)
 

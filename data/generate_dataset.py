@@ -392,11 +392,6 @@ def generate_h5py_instance(
 
 def main():
     args = get_args()
-    # generate_h5py(
-    #     args.input,
-    #     args.output,
-    #     args.label,
-    # )
     generate_h5py_semantic(args.input, args.output, point_no=8000)
     generate_h5py_instance(args.input, args.output, point_no=8000)
 

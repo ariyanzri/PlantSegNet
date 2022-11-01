@@ -50,7 +50,10 @@ class SpaceSimilarityLossV2(nn.Module):
 
         distance_pred = torch.cdist(input, input)
 
-        target = torch.unsqueeze(target.float(), dim=-1)
+        if target.shape[-1] != 1:
+            target = torch.unsqueeze(target.float(), dim=-1)
+        else:
+            target = target.float()
         distances_gt = torch.cdist(target, target)
 
         normalized_distance_gt = torch.where(
@@ -62,6 +65,40 @@ class SpaceSimilarityLossV2(nn.Module):
         return torch.mean(normalized_distance_gt)
 
 
+class SpaceSimilarityLossV3(nn.Module):
+    def __init__(self, points, M1=1, M2=10):
+        super().__init__()
+        self.M1 = M1
+        self.M2 = M2
+        self.euclidean_distances = torch.cdist(points, points)
+
+    def forward(self, input, target):
+
+        distance_pred = torch.cdist(input, input)
+
+        if target.shape[-1] != 1:
+            target = torch.unsqueeze(target.float(), dim=-1)
+        else:
+            target = target.float()
+        distances_gt = torch.cdist(target, target)
+
+        normalized_distance_gt = torch.where(
+            distances_gt == 0,
+            torch.clamp(distance_pred - self.M1, min=0),
+            torch.clamp(self.M2 - distance_pred, min=0),
+        )
+
+        normal_loss = torch.mean(normalized_distance_gt)
+        normalized_euclidean_distance = torch.clamp(
+            -torch.log(5 * (self.euclidean_distances + 0.01)), min=0
+        )
+        close_points_loss = torch.mean(
+            torch.mul(distance_pred, normalized_euclidean_distance)
+        )
+
+        return normal_loss + close_points_loss
+
+
 class LeafMetrics(nn.Module):
     def __init__(self, dist):
         super().__init__()
@@ -71,7 +108,11 @@ class LeafMetrics(nn.Module):
 
         cluster_pred = torch.cdist(input, input)
 
-        target = torch.unsqueeze(target.float(), dim=-1)
+        if target.shape[-1] != 1:
+            target = torch.unsqueeze(target.float(), dim=-1)
+        else:
+            target = target.float()
+
         cluster_gt = torch.cdist(target, target)
         ones = torch.ones(cluster_pred.shape).cuda()
         zeros = torch.zeros(cluster_pred.shape).cuda()

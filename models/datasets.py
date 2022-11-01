@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import torch.utils.data as data
 import h5py
+import random
 
 
 class SorghumDataset(data.Dataset):
@@ -78,17 +79,106 @@ class SorghumDatasetWithNormals(data.Dataset):
 
     """
 
-    def __init__(self, h5_filename, use_normals=True):
+    def __init__(self, h5_filename, use_normals=True, std_coef=0.025):
         super().__init__()
         self.h5_filename = h5_filename
         self.length = -1
         self.append_normals = use_normals
+        self.std_coef = std_coef
+        self.is_semantic = "semantic" in h5_filename
+
+    def semantic_transformations(self, np_points, np_labels):
+
+        dimension_sizes = np.max(np_points, 0) - np.min(np_points, 0)
+
+        # ground transformations
+
+        rnd_num = np.random.rand(1)
+        if rnd_num >= 0.7:
+            # add duplicate to the ground points (with probability)
+            ground = np.where(np_labels == 0)[0]
+            duplicate_indices = np.random.choice(
+                ground.tolist(),
+                int(ground.shape[0] / 2),
+                replace=False,
+            )
+            np_points[duplicate_indices, 1] -= dimension_sizes[1] / 10
+        elif rnd_num <= 0.3:
+            # add separate noise to ground
+            np_points[np_labels == 0, 1] += np.random.normal(
+                0,
+                dimension_sizes[1] / 40,
+                size=np_points[np_labels == 0, 1].shape,
+            )
+
+        # focal plant transformations
+
+        rnd_num = np.random.rand(1)
+        if rnd_num >= 0.7:
+            # keep only focal plant
+            initial_size = np_points.shape[0]
+            np_points = np_points[(np_labels == 1) | (np_labels == 0), :]
+            np_labels = np_labels[(np_labels == 1) | (np_labels == 0)]
+            focal_indices = np.random.choice(
+                np.arange(0, np_points.shape[0]).tolist(),
+                initial_size,
+                replace=True,
+            )
+            np_points = np_points[focal_indices]
+            np_labels = np_labels[focal_indices]
+        elif rnd_num <= 0.3 and False:
+            # crop around the focal plant
+            focal_points = np_points[np_labels == 1]
+            full_mins = np.min(np_points, 0)
+            full_maxs = np.max(np_points, 0)
+            focal_mins = np.min(focal_points, 0)
+            focal_maxs = np.max(focal_points, 0)
+            x_1 = random.uniform(full_mins[0], focal_mins[0])
+            x_2 = random.uniform(focal_maxs[0], full_maxs[0])
+            y_1 = random.uniform(full_mins[1], focal_mins[1])
+            y_2 = random.uniform(focal_maxs[1], full_maxs[1])
+            np_labels = np_labels[
+                (np_points[:, 0] >= x_1)
+                & (np_points[:, 0] <= x_2)
+                & (np_points[:, 1] >= y_1)
+                & (np_points[:, 1] <= y_2)
+                & (np_points[:, 2] >= full_mins[2])
+                & (np_points[:, 2] <= full_maxs[2])
+            ]
+            np_points = np_points[
+                (np_points[:, 0] >= x_1)
+                & (np_points[:, 0] <= x_2)
+                & (np_points[:, 1] >= y_1)
+                & (np_points[:, 1] <= y_2)
+                & (np_points[:, 2] >= full_mins[2])
+                & (np_points[:, 2] <= full_maxs[2])
+            ]
+
+        return np_points, np_labels
 
     def __getitem__(self, index):
         f = h5py.File(self.h5_filename, "r")
-        points = torch.from_numpy(f["points"][index]).float()
-        labels = torch.from_numpy(f["labels"][index]).type(torch.LongTensor)
-        normals = torch.from_numpy(f["normals"][index]).float()
+        np_points = f["points"][index]
+        np_labels = f["labels"][index].squeeze()
+        np_normals = f["normals"][index]
+
+        # perform data augmentation if semantic segmentation
+        if self.is_semantic:
+            np_points, np_labels = self.semantic_transformations(np_points, np_labels)
+
+        # add noise to all points
+        std_points = np.repeat(
+            np.expand_dims(np.std(np_points, 0), 0), np_points.shape[0], 0
+        )
+        np_points += np.random.normal(
+            0, std_points * self.std_coef, size=np_points.shape
+        )
+
+        # convert to torch
+
+        points = torch.from_numpy(np_points).type(torch.DoubleTensor)
+        labels = torch.from_numpy(np_labels).type(torch.LongTensor)
+        normals = torch.from_numpy(np_normals).float()
         f.close()
 
         if self.append_normals:
