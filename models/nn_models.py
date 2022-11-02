@@ -16,6 +16,7 @@ from models.utils import (
     BNMomentumScheduler,
     SpaceSimilarityLossV2,
     SpaceSimilarityLossV3,
+    SpaceSimilarityLossV4,
     LeafMetrics,
 )
 from models.leaf_model import SorghumPartNetLeaf
@@ -316,10 +317,12 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         pred_leaf_features = self(points)
 
-        if "loss_fn" in self.hparams and self.hparams["loss_fn"] == "v3":
-            criterion_cluster = SpaceSimilarityLossV3(points)
-        else:
+        if "loss_fn" not in self.hparams:
             criterion_cluster = SpaceSimilarityLossV2()
+        elif self.hparams["loss_fn"] == "v3":
+            criterion_cluster = SpaceSimilarityLossV3(points)
+        elif self.hparams["loss_fn"] == "v4":
+            criterion_cluster = SpaceSimilarityLossV4(points)
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
@@ -357,10 +360,12 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         pred_leaf_features = self(points)
 
-        if "loss_fn" in self.hparams and self.hparams["loss_fn"] == "v3":
-            criterion_cluster = SpaceSimilarityLossV3(points)
-        else:
+        if "loss_fn" not in self.hparams:
             criterion_cluster = SpaceSimilarityLossV2()
+        elif self.hparams["loss_fn"] == "v3":
+            criterion_cluster = SpaceSimilarityLossV3(points)
+        elif self.hparams["loss_fn"] == "v4":
+            criterion_cluster = SpaceSimilarityLossV4(points)
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 

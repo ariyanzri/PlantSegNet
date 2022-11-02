@@ -65,6 +65,7 @@ class SpaceSimilarityLossV2(nn.Module):
         return torch.mean(normalized_distance_gt)
 
 
+# Radius close point loss function
 class SpaceSimilarityLossV3(nn.Module):
     def __init__(self, points, M1=1, M2=10):
         super().__init__()
@@ -97,6 +98,43 @@ class SpaceSimilarityLossV3(nn.Module):
         )
 
         return normal_loss + close_points_loss
+
+
+# KNN based close point loss function
+class SpaceSimilarityLossV4(nn.Module):
+    def __init__(self, points, M1=1, M2=10, cpc=0.2):
+        super().__init__()
+        self.close_point_coef = cpc
+        self.M1 = M1
+        self.M2 = M2
+        self.euclidean_distances = torch.cdist(points, points)
+
+    def forward(self, input, target):
+
+        distance_pred = torch.cdist(input, input)
+
+        if target.shape[-1] != 1:
+            target = torch.unsqueeze(target.float(), dim=-1)
+        else:
+            target = target.float()
+        distances_gt = torch.cdist(target, target)
+
+        normalized_distance_gt = torch.where(
+            distances_gt == 0,
+            torch.clamp(distance_pred - self.M1, min=0),
+            torch.clamp(self.M2 - distance_pred, min=0),
+        )
+
+        normal_loss = torch.mean(normalized_distance_gt)
+
+        knn_ind = self.euclidean_distances.topk(k=10, dim=-1)[1]
+
+        knn_euclidean_dist = self.euclidean_distances.gather(-1, knn_ind)
+        knn_pred_dist = distance_pred.gather(-1, knn_ind)
+
+        close_points_loss = torch.mean(torch.mul(knn_euclidean_dist, knn_pred_dist))
+
+        return normal_loss + self.close_point_coef * close_points_loss
 
 
 class LeafMetrics(nn.Module):

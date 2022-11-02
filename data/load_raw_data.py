@@ -159,8 +159,8 @@ def load_pcd_plyfile_new_approach(
 def load_ply_file_points(path, n_points=8000, full_points=50000):
     pcd = o3d.io.read_point_cloud(path)
 
-    R = pcd.get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))
-    pcd = pcd.rotate(R, center=pcd.get_center())
+    # R = pcd.get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))
+    # pcd = pcd.rotate(R, center=pcd.get_center())
 
     pcd.estimate_normals(
         search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30)
