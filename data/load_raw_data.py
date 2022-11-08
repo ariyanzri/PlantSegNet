@@ -81,9 +81,7 @@ def load_pcd_plyfile(path, index_to_use="leaf_index", down_sample_n=8000):
         return None
 
 
-def load_pcd_plyfile_new_approach(
-    path, is_instance, down_sample_n=8000, std_coef=0.025
-):
+def load_pcd_plyfile_new_approach(path, is_instance, down_sample_n=8000):
     try:
         with open(path, "rb") as f:
             plydata = PlyData.read(f)

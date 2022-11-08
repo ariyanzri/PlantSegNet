@@ -263,7 +263,7 @@ def main_ds(args):
 
 def main_ply(args):
 
-    semantic_model = load_model("SorghumPartNetSemantic", args.version).double()
+    semantic_model = load_model("SorghumPartNetSemantic", -1).double()
     instance_model = load_model("SorghumPartNetInstance", args.version).double()
 
     path = os.path.join(args.path, f"{args.index}.ply")

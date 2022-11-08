@@ -127,12 +127,11 @@ class SpaceSimilarityLossV4(nn.Module):
 
         normal_loss = torch.mean(normalized_distance_gt)
 
-        knn_ind = self.euclidean_distances.topk(k=10, dim=-1)[1]
+        knn_ind = (self.euclidean_distances * -1).topk(k=10, dim=-1)[1]
 
-        knn_euclidean_dist = self.euclidean_distances.gather(-1, knn_ind)
         knn_pred_dist = distance_pred.gather(-1, knn_ind)
 
-        close_points_loss = torch.mean(torch.mul(knn_euclidean_dist, knn_pred_dist))
+        close_points_loss = torch.mean(knn_pred_dist)
 
         return normal_loss + self.close_point_coef * close_points_loss
 
