@@ -231,7 +231,7 @@ def load_model(model_name, version):
         version = sorted(versions)[-1].split("_")[-1]
 
     path_all_checkpoints = f"/space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/{model_name}/lightning_logs/version_{version}/checkpoints"
-    path = os.listdir(path_all_checkpoints)[-1]
+    path = sorted(os.listdir(path_all_checkpoints))[-1]
     print("Using Version ", version, " and ", path)
 
     model = load_model_chkpoint(model_name, os.path.join(path_all_checkpoints, path))

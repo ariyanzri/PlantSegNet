@@ -102,31 +102,25 @@ class SorghumDatasetWithNormals(data.Dataset):
                 int(ground.shape[0] / 2),
                 replace=False,
             )
-            np_points[duplicate_indices, 1] -= dimension_sizes[1] / 10
+            np_points[duplicate_indices, 2] -= dimension_sizes[2] / 10
         elif rnd_num <= 0.3:
             # add separate noise to ground
-            np_points[np_labels == 0, 1] += np.random.normal(
+            np_points[np_labels == 0, 2] += np.random.normal(
                 0,
-                dimension_sizes[1] / 40,
-                size=np_points[np_labels == 0, 1].shape,
+                dimension_sizes[2] / 40,
+                size=np_points[np_labels == 0, 2].shape,
             )
 
         # focal plant transformations
 
+        initial_size = np_points.shape[0]
+
         rnd_num = np.random.rand(1)
         if rnd_num >= 0.7:
             # keep only focal plant
-            initial_size = np_points.shape[0]
             np_points = np_points[(np_labels == 1) | (np_labels == 0), :]
             np_labels = np_labels[(np_labels == 1) | (np_labels == 0)]
-            focal_indices = np.random.choice(
-                np.arange(0, np_points.shape[0]).tolist(),
-                initial_size,
-                replace=True,
-            )
-            np_points = np_points[focal_indices]
-            np_labels = np_labels[focal_indices]
-        elif rnd_num <= 0.3 and False:
+        elif rnd_num <= 0.1:
             # crop around the focal plant
             focal_points = np_points[np_labels == 1]
             full_mins = np.min(np_points, 0)
@@ -153,6 +147,14 @@ class SorghumDatasetWithNormals(data.Dataset):
                 & (np_points[:, 2] >= full_mins[2])
                 & (np_points[:, 2] <= full_maxs[2])
             ]
+
+        focal_indices = np.random.choice(
+            np.arange(0, np_points.shape[0]).tolist(),
+            initial_size,
+            replace=True,
+        )
+        np_points = np_points[focal_indices]
+        np_labels = np_labels[focal_indices]
 
         return np_points, np_labels
 
