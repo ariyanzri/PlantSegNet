@@ -71,8 +71,6 @@ def labels_to_soil_and_lettuce_colors(labels):
 
 def save_gif(pcd_filename, output_filename):
     pcd = o3d.io.read_point_cloud(pcd_filename)
-    R = pcd.get_rotation_matrix_from_xyz((np.pi / 2, 0, 0))
-    pcd = pcd.rotate(R, center=pcd.get_center())
     points = np.array(pcd.points)
     labels = np.array(pcd.colors)
     vis = PointCloudVisualizer()

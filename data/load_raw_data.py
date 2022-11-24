@@ -199,3 +199,14 @@ def paint_pcd_into_o3d(plyfile_pcd, key):
 
     pcd.colors = o3d.utility.Vector3dVector(colors)
     return pcd
+
+
+def load_real_ply_with_labels(path):
+    with open(path, "rb") as f:
+        plydata = PlyData.read(f)
+        points = np.asarray(np.array(plydata.elements[0].data).tolist())
+        leaf_index = np.asarray(np.array(plydata.elements[1].data).tolist()).squeeze()
+        semantic_index = np.asarray(
+            np.array(plydata.elements[2].data).tolist()
+        ).squeeze()
+    return points, leaf_index, semantic_index

@@ -154,11 +154,23 @@ class LeafMetrics(nn.Module):
         ones = torch.ones(cluster_pred.shape).cuda()
         zeros = torch.zeros(cluster_pred.shape).cuda()
 
-        TP = torch.sum(torch.where((cluster_gt == 0) & (cluster_pred < 5), ones, zeros))
-        TN = torch.sum(torch.where((cluster_gt > 0) & (cluster_pred >= 5), ones, zeros))
-        FP = torch.sum(torch.where((cluster_gt > 0) & (cluster_pred < 5), ones, zeros))
+        TP = torch.sum(
+            torch.where(
+                (cluster_gt == 0) & (cluster_pred < self.threshold), ones, zeros
+            )
+        )
+        TN = torch.sum(
+            torch.where(
+                (cluster_gt > 0) & (cluster_pred >= self.threshold), ones, zeros
+            )
+        )
+        FP = torch.sum(
+            torch.where((cluster_gt > 0) & (cluster_pred < self.threshold), ones, zeros)
+        )
         FN = torch.sum(
-            torch.where((cluster_gt == 0) & (cluster_pred >= 5), ones, zeros)
+            torch.where(
+                (cluster_gt == 0) & (cluster_pred >= self.threshold), ones, zeros
+            )
         )
 
         Acc = (TP + TN) / (TP + FP + TN + FN)
@@ -166,7 +178,7 @@ class LeafMetrics(nn.Module):
         Recall = TP / (TP + FN)
         F = 2 * (Precision * Recall) / (Precision + Recall)
 
-        return Acc, Precision, Recall, F
+        return Acc.item(), Precision.item(), Recall.item(), F.item()
 
 
 def binary_acc(out, target):

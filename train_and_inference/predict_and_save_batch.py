@@ -101,7 +101,7 @@ def predict_and_save_individual(arguments):
             points = torch.tensor(pcd["points"], dtype=torch.float64)
             points_full = torch.tensor(pcd["points_full"], dtype=torch.float64)
         else:
-            points_full, points = load_ply_file_points(path)
+            points_full, points, _ = load_ply_file_points(path)
             points = torch.tensor(points, dtype=torch.float64)
             points_full = torch.tensor(points_full, dtype=torch.float64)
 
@@ -145,7 +145,7 @@ def predict_and_save_individual(arguments):
 
         print(f":: Generated gif for {pcd_name}")
     except Exception as e:
-        print(":: Error happened --> " + e)
+        print(":: Error happened --> " + str(e))
 
 
 def predict_batch(args):
@@ -212,7 +212,7 @@ def main():
 
     predict_batch(args)
     create_html(args.output, args.output, "visualization")
-    create_html(args.output, args.output, "visualization")
+    # create_html(args.output, args.output, "visualization")
 
 
 if __name__ == "__main__":

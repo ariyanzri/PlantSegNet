@@ -6,6 +6,7 @@ import torch
 import open3d as o3d
 import torch.nn.functional as F
 import sys
+from sklearn.cluster import DBSCAN
 
 sys.path.append("..")
 from models.nn_models import *
@@ -96,10 +97,20 @@ def get_args():
         default=0,
     )
 
+    parser.add_argument(
+        "-m",
+        "--method",
+        help="The clustering method to be used. ",
+        metavar="method",
+        required=False,
+        type=str,
+        default="dbscan",
+    )
+
     return parser.parse_args()
 
 
-def predict_downsampled(points, semantic_model, instance_model, dist=5):
+def predict_downsampled(points, semantic_model, instance_model, method, dist=5):
     if (
         "use_normals" in semantic_model.hparams
         and semantic_model.hparams["use_normals"]
@@ -128,24 +139,29 @@ def predict_downsampled(points, semantic_model, instance_model, dist=5):
             torch.unsqueeze(instance_points[:, :3], dim=0).cuda()
         )
 
-    distance_pred = torch.cdist(pred_instance_features, pred_instance_features)
-    distance_pred = distance_pred.cpu().detach().numpy().T
-    distance_pred = np.squeeze(distance_pred)
+    if method == "dbscan":
+        pred_instance_features = pred_instance_features.cpu().detach().numpy().squeeze()
+        clustering = DBSCAN(eps=1, min_samples=10).fit(pred_instance_features)
+        pred_final_cluster = clustering.labels_
+    else:
+        distance_pred = torch.cdist(pred_instance_features, pred_instance_features)
+        distance_pred = distance_pred.cpu().detach().numpy().T
+        distance_pred = np.squeeze(distance_pred)
 
-    distance_pred = 1 * (distance_pred < dist)
+        distance_pred = 1 * (distance_pred < dist)
 
-    pred_final_cluster = np.zeros((distance_pred.shape[0])).astype("uint16")
-    next_label = 1
+        pred_final_cluster = np.zeros((distance_pred.shape[0])).astype("uint16")
+        next_label = 1
 
-    for i in range(distance_pred.shape[0]):
-        if pred_final_cluster[i] == 0:
-            pred_final_cluster[i] = next_label
-            next_label += 1
+        for i in range(distance_pred.shape[0]):
+            if pred_final_cluster[i] == 0:
+                pred_final_cluster[i] = next_label
+                next_label += 1
 
-        ind = np.where(distance_pred[i] == 1)
+            ind = np.where(distance_pred[i] == 1)
 
-        for j in ind[0]:
-            pred_final_cluster[j] = pred_final_cluster[i]
+            for j in ind[0]:
+                pred_final_cluster[j] = pred_final_cluster[i]
 
     print("Number of predicted leaf instances: ", len(list(set(pred_final_cluster))))
 
@@ -248,7 +264,7 @@ def main_ds(args):
     )
 
     painted_pcd_is_focal, painted_pcd_initial_cluster, _, _ = predict_downsampled(
-        points, semantic_model, instance_model
+        points, semantic_model, instance_model, args.method
     )
 
     save_predicted(
@@ -263,7 +279,7 @@ def main_ds(args):
 
 def main_ply(args):
 
-    semantic_model = load_model("SorghumPartNetSemantic", -1).double()
+    semantic_model = load_model("SorghumPartNetSemantic", args.version).double()
     instance_model = load_model("SorghumPartNetInstance", args.version).double()
 
     path = os.path.join(args.path, f"{args.index}.ply")
@@ -288,7 +304,7 @@ def main_ply(args):
         downsampled_instance_pcd,
         downsampled_semantics,
         downsampled_instance,
-    ) = predict_downsampled(points, semantic_model, instance_model)
+    ) = predict_downsampled(points, semantic_model, instance_model, args.method)
 
     semantic_pcd, instance_pcd = pred_full_size(
         points_full, points[:, :3], downsampled_semantics, downsampled_instance
