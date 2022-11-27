@@ -14,7 +14,7 @@ def knn(x, k):
     return idx
 
 
-def get_graph_feature(x, k=20, idx=None, dim9=False):
+def get_graph_feature(x, k=20, idx=None, dim9=False, device_name="cuda"):
     batch_size = x.size(0)
     num_points = x.size(2)
 
@@ -24,7 +24,7 @@ def get_graph_feature(x, k=20, idx=None, dim9=False):
             idx = knn(x, k=k)  # (batch_size, num_points, k)
         else:
             idx = knn(x[:, 6:], k=k)
-    device = torch.device("cuda")
+    device = torch.device(device_name)
 
     idx_base = torch.arange(0, batch_size, device=device).view(-1, 1, 1) * num_points
 
@@ -143,9 +143,10 @@ class DGCNNBinaryClass(nn.Module):
 
 
 class DGCNNFeatureSpace(nn.Module):
-    def __init__(self, args, input_dim=3):
+    def __init__(self, args, input_dim=3, device_name="cuda"):
         super(DGCNNFeatureSpace, self).__init__()
         self.args = args
+        self.device = device_name
         self.k = args.k
 
         self.bn1 = nn.BatchNorm2d(64)
@@ -178,7 +179,7 @@ class DGCNNFeatureSpace(nn.Module):
         x = x.transpose(1, 2)
 
         x = get_graph_feature(
-            x, k=self.k
+            x, k=self.k, device_name=self.device
         )  # (batch_size, 3, num_points) -> (batch_size, 3*2, num_points, k)
         x = self.conv1(
             x
@@ -188,7 +189,7 @@ class DGCNNFeatureSpace(nn.Module):
         ]  # (batch_size, 64, num_points, k) -> (batch_size, 64, num_points)
 
         x = get_graph_feature(
-            x1, k=self.k
+            x1, k=self.k, device_name=self.device
         )  # (batch_size, 64, num_points) -> (batch_size, 64*2, num_points, k)
         x = self.conv2(
             x
@@ -198,7 +199,7 @@ class DGCNNFeatureSpace(nn.Module):
         ]  # (batch_size, 64, num_points, k) -> (batch_size, 64, num_points)
 
         x = get_graph_feature(
-            x2, k=self.k
+            x2, k=self.k, device_name=self.device
         )  # (batch_size, 64, num_points) -> (batch_size, 64*2, num_points, k)
         x = self.conv3(
             x
@@ -208,7 +209,7 @@ class DGCNNFeatureSpace(nn.Module):
         ]  # (batch_size, 128, num_points, k) -> (batch_size, 128, num_points)
 
         x = get_graph_feature(
-            x3, k=self.k
+            x3, k=self.k, device_name=self.device
         )  # (batch_size, 128, num_points) -> (batch_size, 128*2, num_points, k)
         x = self.conv4(
             x
@@ -221,8 +222,9 @@ class DGCNNFeatureSpace(nn.Module):
 
 
 class DGCNNSemanticSegmentor(nn.Module):
-    def __init__(self, k, output_dim=3, input_dim=3):
+    def __init__(self, k, output_dim=3, input_dim=3, device_name="cuda"):
         super(DGCNNSemanticSegmentor, self).__init__()
+        self.device = device_name
         self.k = k
 
         self.bn1 = nn.BatchNorm2d(64)
@@ -255,7 +257,7 @@ class DGCNNSemanticSegmentor(nn.Module):
         x = x.transpose(1, 2)
 
         x = get_graph_feature(
-            x, k=self.k
+            x, k=self.k, device_name=self.device
         )  # (batch_size, 3, num_points) -> (batch_size, 3*2, num_points, k)
         x = self.conv1(
             x
@@ -265,7 +267,7 @@ class DGCNNSemanticSegmentor(nn.Module):
         ]  # (batch_size, 64, num_points, k) -> (batch_size, 64, num_points)
 
         x = get_graph_feature(
-            x1, k=self.k
+            x1, k=self.k, device_name=self.device
         )  # (batch_size, 64, num_points) -> (batch_size, 64*2, num_points, k)
         x = self.conv2(
             x
@@ -275,7 +277,7 @@ class DGCNNSemanticSegmentor(nn.Module):
         ]  # (batch_size, 64, num_points, k) -> (batch_size, 64, num_points)
 
         x = get_graph_feature(
-            x2, k=self.k
+            x2, k=self.k, device_name=self.device
         )  # (batch_size, 64, num_points) -> (batch_size, 64*2, num_points, k)
         x = self.conv3(
             x
@@ -285,7 +287,7 @@ class DGCNNSemanticSegmentor(nn.Module):
         ]  # (batch_size, 128, num_points, k) -> (batch_size, 128, num_points)
 
         x = get_graph_feature(
-            x3, k=self.k
+            x3, k=self.k, device_name=self.device
         )  # (batch_size, 128, num_points) -> (batch_size, 128*2, num_points, k)
         x = self.conv4(
             x
