@@ -177,7 +177,6 @@ class SorghumDatasetWithNormals(data.Dataset):
         )
 
         # convert to torch
-
         points = torch.from_numpy(np_points).type(torch.DoubleTensor)
         labels = torch.from_numpy(np_labels).type(torch.LongTensor)
         normals = torch.from_numpy(np_normals).float()

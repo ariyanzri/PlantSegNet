@@ -1,6 +1,9 @@
 import torch.nn as nn
 import torch.optim.lr_scheduler as lr_sched
 import torch
+from torchmetrics import Accuracy
+from torchmetrics.functional import f1, precision_recall
+from sklearn.cluster import DBSCAN
 
 
 def set_bn_momentum_default(bn_momentum):
@@ -137,6 +140,51 @@ class SpaceSimilarityLossV4(nn.Module):
 
 
 class LeafMetrics(nn.Module):
+    def __init__(self, device_name="cpu"):
+        super().__init__()
+        self.device_name = device_name
+
+    def forward(self, input, target):
+
+        if len(input.shape) != 3:
+            raise Exception(
+                f"Incorrect shape of the input tensor. It should have 3 dimensions (BXNX1) but it has shape {input.shape}. "
+            )
+
+        if len(target.shape) != 3:
+            raise Exception(
+                f"Incorrect shape of the target tensor. It should have 3 dimensions (BXNX1) but it has shape {target.shape}. "
+            )
+
+        cluster_pred = torch.cdist(input.float(), input.float())
+        cluster_gt = torch.cdist(target.float(), target.float())
+
+        ones = torch.ones(cluster_pred.shape).int().to(torch.device(self.device_name))
+        zeros = torch.zeros(cluster_pred.shape).int().to(torch.device(self.device_name))
+
+        cluster_gt = (
+            torch.where(cluster_gt == 0, ones, zeros)
+            .squeeze()
+            .flatten()
+            .to(torch.device(self.device_name))
+        )
+        cluster_pred = (
+            torch.where(cluster_pred == 0, ones, zeros)
+            .squeeze()
+            .flatten()
+            .to(torch.device(self.device_name))
+        )
+
+        acc_func = Accuracy().to(torch.device(self.device_name))
+
+        Acc = acc_func(cluster_pred, cluster_gt)
+        Precision, Recall = precision_recall(cluster_pred, cluster_gt, multiclass=False)
+        F = f1(cluster_pred, cluster_gt, multiclass=False)
+
+        return Acc.item(), Precision.item(), Recall.item(), F.item()
+
+
+class LeafMetricsTraining(nn.Module):
     def __init__(self, dist):
         super().__init__()
         self.threshold = dist
@@ -179,6 +227,21 @@ class LeafMetrics(nn.Module):
         F = 2 * (Precision * Recall) / (Precision + Recall)
 
         return Acc.item(), Precision.item(), Recall.item(), F.item()
+
+
+class SemanticMetrics(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.accuracy_fn = Accuracy()
+
+    def forward(self, input, target):
+
+        input = input.int().cpu().squeeze()
+        target = target.int().cpu().squeeze()
+
+        Acc = self.accuracy_fn(input, target)
+
+        return Acc.item()
 
 
 def binary_acc(out, target):

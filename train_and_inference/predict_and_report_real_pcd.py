@@ -9,7 +9,7 @@ import random
 sys.path.append("..")
 from models.nn_models import *
 from models.datasets import SorghumDataset
-from models.utils import LeafMetrics
+from models.utils import LeafMetrics, SemanticMetrics
 from data.utils import create_ply_pcd_from_points_with_labels
 from data.load_raw_data import load_real_ply_with_labels
 from scipy.spatial.distance import cdist
@@ -75,7 +75,7 @@ def get_args():
 
 
 def predict_and_generate_pcd(
-    points, instance_points, semantic_model, instance_model, dist=5, device_name="cpu"
+    points, instance_points, semantic_model, instance_model, dist=1, device_name="cpu"
 ):
 
     device = torch.device(device_name)
@@ -116,6 +116,25 @@ def predict_and_generate_pcd(
     clustering = DBSCAN(eps=1, min_samples=10).fit(pred_instance_features)
     pred_final_cluster = clustering.labels_
 
+    # distance_pred = torch.cdist(pred_instance_features, pred_instance_features)
+    # distance_pred = distance_pred.cpu().detach().numpy().T
+    # distance_pred = np.squeeze(distance_pred)
+
+    # distance_pred = 1 * (distance_pred < dist)
+
+    # pred_final_cluster = np.zeros((distance_pred.shape[0])).astype("int32")
+    # next_label = 1
+
+    # for i in range(distance_pred.shape[0]):
+    #     if pred_final_cluster[i] == 0:
+    #         pred_final_cluster[i] = next_label
+    #         next_label += 1
+
+    #     ind = np.where(distance_pred[i] == 1)
+
+    #     for j in ind[0]:
+    #         pred_final_cluster[j] = pred_final_cluster[i]
+
     print("Number of predicted leaf instances: ", len(list(set(pred_final_cluster))))
 
     points = points.cpu().detach().numpy()
@@ -129,7 +148,12 @@ def predict_and_generate_pcd(
         instance_points[:, :3], pred_final_cluster
     )
 
-    return ply_semantic, ply_instance, pred_semantic_label_labels, pred_final_cluster
+    return (
+        ply_semantic,
+        ply_instance,
+        pred_semantic_label_labels,
+        pred_final_cluster,
+    )
 
 
 def save_predicted(ply_pcd, path):
@@ -178,7 +202,7 @@ def main_ply(args):
         points = torch.tensor(points, dtype=torch.float64)
         instance_points = torch.tensor(instance_points, dtype=torch.float64)
 
-        print(f":: Point cloud with {points.shape[0]} points loaded!")
+        print(f":: Point cloud {p} with {points.shape[0]} points loaded!")
 
         (
             semantic_pcd,
@@ -189,18 +213,20 @@ def main_ply(args):
             points, instance_points, semantic_model, instance_model
         )
 
-        # instance_labels = instance_labels[downsampled_semantics == 1]
-        metric_calculator = LeafMetrics(1)
-        acc, precison, recal, f1 = metric_calculator(
-            torch.tensor(instance_predictions.astype(np.int32), dtype=torch.float64)
-            .unsqueeze(0)
-            .to(torch.device("cuda")),
-            torch.tensor(instance_labels, dtype=torch.float64)
-            .unsqueeze(0)
-            .to(torch.device("cuda")),
+        metric_calculator = SemanticMetrics()
+        acc = metric_calculator(
+            torch.tensor(semantic_predictions), torch.tensor(semantic_labels)
         )
 
-        print(acc, precison, recal, f1)
+        print(":: Semantic Predictions Accuracy: ", acc)
+
+        metric_calculator = LeafMetrics()
+        acc, precison, recal, f1 = metric_calculator(
+            torch.tensor(instance_predictions).unsqueeze(0).unsqueeze(-1),
+            torch.tensor(instance_labels).unsqueeze(0).unsqueeze(-1),
+        )
+
+        print(":: Instance Predictions: ", acc, precison, recal, f1)
 
         if args.save:
             save_predicted(

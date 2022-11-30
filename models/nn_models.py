@@ -18,6 +18,8 @@ from models.utils import (
     SpaceSimilarityLossV3,
     SpaceSimilarityLossV4,
     LeafMetrics,
+    SemanticMetrics,
+    LeafMetricsTraining,
 )
 from models.leaf_model import SorghumPartNetLeaf
 
@@ -131,10 +133,14 @@ class SorghumPartNetSemantic(pl.LightningModule):
         semantic_label_loss = critirion(pred_semantic_label, semantic_label)
 
         with torch.no_grad():
-            semantic_label_acc = (
-                (torch.argmax(pred_semantic_label, dim=1) == semantic_label)
-                .float()
-                .mean()
+            # semantic_label_acc = (
+            #     (torch.argmax(pred_semantic_label, dim=1) == semantic_label)
+            #     .float()
+            #     .mean()
+            # )
+            metric_calculator = SemanticMetrics()
+            semantic_label_acc = metric_calculator(
+                torch.argmax(pred_semantic_label, dim=1), semantic_label
             )
 
         tensorboard_logs = {
@@ -168,8 +174,12 @@ class SorghumPartNetSemantic(pl.LightningModule):
         critirion = torch.nn.CrossEntropyLoss()
         semantic_label_loss = critirion(pred_semantic_label, semantic_label)
 
-        semantic_label_acc = (
-            (torch.argmax(pred_semantic_label, dim=1) == semantic_label).float().mean()
+        # semantic_label_acc = (
+        #     (torch.argmax(pred_semantic_label, dim=1) == semantic_label).float().mean()
+        # )
+        metric_calculator = SemanticMetrics()
+        semantic_label_acc = metric_calculator(
+            torch.argmax(pred_semantic_label, dim=1), semantic_label
         )
 
         tensorboard_logs = {
@@ -189,24 +199,24 @@ class SorghumPartNetSemantic(pl.LightningModule):
 
         return tensorboard_logs
 
-    def validation_epoch_end(self, outputs):
+    # def validation_epoch_end(self, outputs):
 
-        semantic_label_loss = torch.stack(
-            [x["val_semantic_label_loss"] for x in outputs]
-        ).mean()
-        semantic_label_acc = torch.stack(
-            [x["val_semantic_label_acc"] for x in outputs]
-        ).mean()
+    #     semantic_label_loss = torch.stack(
+    #         [x["val_semantic_label_loss"] for x in outputs]
+    #     ).mean()
+    #     semantic_label_acc = torch.stack(
+    #         [x["val_semantic_label_acc"] for x in outputs]
+    #     ).mean()
 
-        tensorboard_logs = {
-            "val_semantic_label_loss": semantic_label_loss,
-            "val_semantic_label_acc": semantic_label_acc,
-        }
+    #     tensorboard_logs = {
+    #         "val_semantic_label_loss": semantic_label_loss,
+    #         "val_semantic_label_acc": semantic_label_acc,
+    #     }
 
-        for k in tensorboard_logs.keys():
-            self.log(k, tensorboard_logs[k], on_epoch=True, prog_bar=True, logger=True)
+    #     for k in tensorboard_logs.keys():
+    #         self.log(k, tensorboard_logs[k], on_epoch=True, prog_bar=True, logger=True)
 
-        return {"val_loss": semantic_label_loss, "log": tensorboard_logs}
+    #     return {"val_loss": semantic_label_loss, "log": tensorboard_logs}
 
 
 class SorghumPartNetInstance(pl.LightningModule):
@@ -326,7 +336,7 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
-        leaf_metrics = LeafMetrics(self.hparams["leaf_space_threshold"])
+        leaf_metrics = LeafMetricsTraining(self.hparams["leaf_space_threshold"])
         Acc, Prec, Rec, F = leaf_metrics(pred_leaf_features, leaf)
 
         tensorboard_logs = {
@@ -369,7 +379,7 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
-        leaf_metrics = LeafMetrics(self.hparams["leaf_space_threshold"])
+        leaf_metrics = LeafMetricsTraining(self.hparams["leaf_space_threshold"])
         Acc, Prec, Rec, F = leaf_metrics(pred_leaf_features, leaf)
 
         tensorboard_logs = {
@@ -380,27 +390,17 @@ class SorghumPartNetInstance(pl.LightningModule):
             "val_leaf_f1": F,
         }
 
-        return tensorboard_logs
-
-    def validation_epoch_end(self, outputs):
-        val_leaf_loss = torch.stack([x["val_leaf_loss"] for x in outputs]).mean()
-        Acc = torch.stack([x["val_leaf_accuracy"] for x in outputs]).mean()
-        Prec = torch.stack([x["val_leaf_precision"] for x in outputs]).mean()
-        Rec = torch.stack([x["val_leaf_recall"] for x in outputs]).mean()
-        F = torch.stack([x["val_leaf_f1"] for x in outputs]).mean()
-
-        tensorboard_logs = {
-            "val_leaf_loss": val_leaf_loss,
-            "val_leaf_accuracy": Acc,
-            "val_leaf_precision": Prec,
-            "val_leaf_recall": Rec,
-            "val_leaf_f1": F,
-        }
-
         for k in tensorboard_logs.keys():
-            self.log(k, tensorboard_logs[k], on_epoch=True, prog_bar=True, logger=True)
+            self.log(
+                k,
+                tensorboard_logs[k],
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+                logger=True,
+            )
 
-        return {"val_loss": val_leaf_loss, "log": tensorboard_logs}
+        return tensorboard_logs
 
 
 class SorghumPartNetInstanceWithLeafBranch(pl.LightningModule):
