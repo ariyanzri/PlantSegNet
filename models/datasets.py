@@ -79,7 +79,7 @@ class SorghumDatasetWithNormals(data.Dataset):
 
     """
 
-    def __init__(self, h5_filename, use_normals=True, std_coef=0.025):
+    def __init__(self, h5_filename, use_normals=True, std_coef=0.015):
         super().__init__()
         self.h5_filename = h5_filename
         self.length = -1
@@ -103,13 +103,13 @@ class SorghumDatasetWithNormals(data.Dataset):
                 replace=False,
             )
             np_points[duplicate_indices, 2] -= dimension_sizes[2] / 10
-        elif rnd_num <= 0.3:
-            # add separate noise to ground
-            np_points[np_labels == 0, 2] += np.random.normal(
-                0,
-                dimension_sizes[2] / 40,
-                size=np_points[np_labels == 0, 2].shape,
-            )
+        # elif rnd_num <= 0.3:
+        #     # add separate noise to ground
+        #     np_points[np_labels == 0, 2] += np.random.normal(
+        #         0,
+        #         dimension_sizes[2] / 40,
+        #         size=np_points[np_labels == 0, 2].shape,
+        #     )
 
         # focal plant transformations
 
@@ -120,33 +120,33 @@ class SorghumDatasetWithNormals(data.Dataset):
             # keep only focal plant
             np_points = np_points[(np_labels == 1) | (np_labels == 0), :]
             np_labels = np_labels[(np_labels == 1) | (np_labels == 0)]
-        elif rnd_num <= 0.1:
-            # crop around the focal plant
-            focal_points = np_points[np_labels == 1]
-            full_mins = np.min(np_points, 0)
-            full_maxs = np.max(np_points, 0)
-            focal_mins = np.min(focal_points, 0)
-            focal_maxs = np.max(focal_points, 0)
-            x_1 = random.uniform(full_mins[0], focal_mins[0])
-            x_2 = random.uniform(focal_maxs[0], full_maxs[0])
-            y_1 = random.uniform(full_mins[1], focal_mins[1])
-            y_2 = random.uniform(focal_maxs[1], full_maxs[1])
-            np_labels = np_labels[
-                (np_points[:, 0] >= x_1)
-                & (np_points[:, 0] <= x_2)
-                & (np_points[:, 1] >= y_1)
-                & (np_points[:, 1] <= y_2)
-                & (np_points[:, 2] >= full_mins[2])
-                & (np_points[:, 2] <= full_maxs[2])
-            ]
-            np_points = np_points[
-                (np_points[:, 0] >= x_1)
-                & (np_points[:, 0] <= x_2)
-                & (np_points[:, 1] >= y_1)
-                & (np_points[:, 1] <= y_2)
-                & (np_points[:, 2] >= full_mins[2])
-                & (np_points[:, 2] <= full_maxs[2])
-            ]
+        # elif rnd_num <= 0.1:
+        #     # crop around the focal plant
+        #     focal_points = np_points[np_labels == 1]
+        #     full_mins = np.min(np_points, 0)
+        #     full_maxs = np.max(np_points, 0)
+        #     focal_mins = np.min(focal_points, 0)
+        #     focal_maxs = np.max(focal_points, 0)
+        #     x_1 = random.uniform(full_mins[0], focal_mins[0])
+        #     x_2 = random.uniform(focal_maxs[0], full_maxs[0])
+        #     y_1 = random.uniform(full_mins[1], focal_mins[1])
+        #     y_2 = random.uniform(focal_maxs[1], full_maxs[1])
+        #     np_labels = np_labels[
+        #         (np_points[:, 0] >= x_1)
+        #         & (np_points[:, 0] <= x_2)
+        #         & (np_points[:, 1] >= y_1)
+        #         & (np_points[:, 1] <= y_2)
+        #         & (np_points[:, 2] >= full_mins[2])
+        #         & (np_points[:, 2] <= full_maxs[2])
+        #     ]
+        #     np_points = np_points[
+        #         (np_points[:, 0] >= x_1)
+        #         & (np_points[:, 0] <= x_2)
+        #         & (np_points[:, 1] >= y_1)
+        #         & (np_points[:, 1] <= y_2)
+        #         & (np_points[:, 2] >= full_mins[2])
+        #         & (np_points[:, 2] <= full_maxs[2])
+        #     ]
 
         focal_indices = np.random.choice(
             np.arange(0, np_points.shape[0]).tolist(),
@@ -199,6 +199,7 @@ class SorghumDatasetWithNormals(data.Dataset):
             f = h5py.File(self.h5_filename, "r")
             self.length = len(f["points"])
             f.close()
+            # self.length = 50
             return self.length
 
 

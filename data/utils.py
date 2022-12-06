@@ -1,11 +1,3 @@
-import sys
-
-sys.path.append(
-    "/work/ariyanzarei/SorghumSegmentation/TreePartNet/pointnet2_ops_lib/pointnet2_ops"
-)
-from pointnet2_utils import (
-    FurthestPointSampling,
-)
 import torch
 import numpy as np
 import random
@@ -39,13 +31,6 @@ def rgb_dec_to_hex(tup):
     a = np.array(tup)
     a = (a * 256).astype("uint8")
     return a[0] * 255**2 + a[1] * 255 + a[2]
-
-
-def get_furthest_point_samples(points, n_samples):
-    furthest_point_sampling = FurthestPointSampling.apply
-    points = torch.Tensor(np.expand_dims(points, 0)).cuda()
-    sampled_points = furthest_point_sampling(points, n_samples).cpu().data.numpy()
-    return sampled_points.squeeze()
 
 
 def get_initial_cluster_assignment(points, samples, labels):

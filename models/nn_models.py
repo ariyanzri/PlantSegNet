@@ -2,13 +2,12 @@ from models.dgcnn import DGCNNFeatureSpace, DGCNNSemanticSegmentor
 from models.extensions import LeafBranch
 import torch
 import numpy as np
-import math
+import os
 import pytorch_lightning as pl
 import torch.nn as nn
 import torch.optim.lr_scheduler as lr_sched
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import math
 from models.datasets import SorghumDataset, SorghumDatasetWithNormals
 from models.dgcnn import *
 from collections import namedtuple
@@ -22,6 +21,11 @@ from models.utils import (
     LeafMetricsTraining,
 )
 from models.leaf_model import SorghumPartNetLeaf
+from data.load_raw_data import load_real_ply_with_labels
+import matplotlib.pyplot as plt
+import torchvision
+from sklearn.cluster import DBSCAN
+from data.utils import distinct_colors
 
 
 class SorghumPartNetSemantic(pl.LightningModule):
@@ -38,7 +42,7 @@ class SorghumPartNetSemantic(pl.LightningModule):
         self.bnm_clip = 1e-2
 
         self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(
-            15,
+            self.hparams["dgcnn_k"],
             input_dim=(
                 3 if "input_dim" not in self.hparams else self.hparams["input_dim"]
             ),
@@ -160,6 +164,7 @@ class SorghumPartNetSemantic(pl.LightningModule):
 
         return {"loss": semantic_label_loss, "log": tensorboard_logs}
 
+    # def log_pointcloud_image(self,)
     def val_dataloader(self):
         return self._build_dataloader(ds_path=self.hparams["val_data"], shuff=False)
 
@@ -199,24 +204,93 @@ class SorghumPartNetSemantic(pl.LightningModule):
 
         return tensorboard_logs
 
-    # def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, batch):
+        self.validation_real_data()
 
-    #     semantic_label_loss = torch.stack(
-    #         [x["val_semantic_label_loss"] for x in outputs]
-    #     ).mean()
-    #     semantic_label_acc = torch.stack(
-    #         [x["val_semantic_label_acc"] for x in outputs]
-    #     ).mean()
+    def validation_real_data(self):
+        real_data_path = self.hparams["real_data"]
 
-    #     tensorboard_logs = {
-    #         "val_semantic_label_loss": semantic_label_loss,
-    #         "val_semantic_label_acc": semantic_label_acc,
-    #     }
+        device_name = "cpu"
+        device = torch.device(device_name)
 
-    #     for k in tensorboard_logs.keys():
-    #         self.log(k, tensorboard_logs[k], on_epoch=True, prog_bar=True, logger=True)
+        semantic_model = self.to(device)
+        semantic_model.DGCNN_semantic_segmentor.device = device_name
 
-    #     return {"val_loss": semantic_label_loss, "log": tensorboard_logs}
+        files = os.listdir(real_data_path)
+        accs = []
+        pred_images = []
+
+        for file in files:
+            path = os.path.join(real_data_path, file)
+            points, _, semantic_labels = load_real_ply_with_labels(path)
+            points = torch.tensor(points, dtype=torch.float64).to(device)
+            if (
+                "use_normals" in semantic_model.hparams
+                and semantic_model.hparams["use_normals"]
+            ):
+                pred_semantic_label = semantic_model(
+                    torch.unsqueeze(points, dim=0).to(device)
+                )
+            else:
+                pred_semantic_label = semantic_model(
+                    torch.unsqueeze(points[:, :3], dim=0).to(device)
+                )
+
+            pred_semantic_label = F.softmax(pred_semantic_label, dim=1)
+            pred_semantic_label = pred_semantic_label[0].cpu().detach().numpy().T
+            pred_semantic_label_labels = np.argmax(pred_semantic_label, 1)
+
+            colors = np.column_stack(
+                (
+                    pred_semantic_label_labels,
+                    pred_semantic_label_labels,
+                    pred_semantic_label_labels,
+                )
+            ).astype("float32")
+            colors[colors[:, 0] == 0, :] = [0.3, 0.1, 0]
+            colors[colors[:, 0] == 1, :] = [0, 0.7, 0]
+            colors[colors[:, 0] == 2, :] = [0, 0, 0.7]
+
+            metric_calculator = SemanticMetrics()
+            acc = metric_calculator(
+                torch.tensor(pred_semantic_label_labels), torch.tensor(semantic_labels)
+            )
+
+            fig = plt.figure(figsize=(15, 15))
+            ax = fig.add_subplot(projection="3d")
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=2, c=colors)
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.set_zlabel("z")
+            ax.set_title(f"Accuracy: {acc:.2f}")
+            fig.canvas.draw()
+            X = (
+                torch.tensor(np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3])
+                .transpose(0, 2)
+                .transpose(1, 2)
+            )
+            X = torchvision.transforms.functional.resize(X, (1000, 1000))
+            accs.append(acc)
+            pred_images.append(X)
+
+        accs = torch.tensor(accs)
+
+        grid = torch.cat(pred_images, 1)
+        self.logger.experiment.add_image(
+            "pred_real_data", grid, self.trainer.current_epoch
+        )
+
+        self.log(
+            "test_real_acc",
+            torch.mean(accs),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=False,
+            logger=True,
+        )
+
+        semantic_model = self.to(torch.device("cuda"))
+        semantic_model.DGCNN_semantic_segmentor.device = "cuda"
 
 
 class SorghumPartNetInstance(pl.LightningModule):
@@ -233,7 +307,7 @@ class SorghumPartNetInstance(pl.LightningModule):
         self.bnm_clip = 1e-2
 
         MyStruct = namedtuple("args", "k")
-        args = MyStruct(k=15)
+        args = MyStruct(k=self.hparams["dgcnn_k"])
 
         self.DGCNN_feature_space = DGCNNFeatureSpace(
             args, (3 if "input_dim" not in self.hparams else self.hparams["input_dim"])
@@ -401,6 +475,114 @@ class SorghumPartNetInstance(pl.LightningModule):
             )
 
         return tensorboard_logs
+
+    def validation_epoch_end(self, batch):
+        self.validation_real_data()
+
+    def validation_real_data(self):
+        real_data_path = self.hparams["real_data"]
+
+        device_name = "cpu"
+        device = torch.device(device_name)
+
+        instance_model = self.to(device)
+        instance_model.DGCNN_feature_space.device = device_name
+
+        files = os.listdir(real_data_path)
+        accs = []
+        precisions = []
+        recals = []
+        f1s = []
+        pred_images = []
+
+        for file in files:
+            path = os.path.join(real_data_path, file)
+            points, instance_labels, semantic_labels = load_real_ply_with_labels(path)
+            points = points[semantic_labels == 1]
+            instance_labels = instance_labels[semantic_labels == 1]
+
+            points = torch.tensor(points, dtype=torch.float64).to(device)
+            if (
+                "use_normals" in instance_model.hparams
+                and instance_model.hparams["use_normals"]
+            ):
+                pred_instance_features = instance_model(
+                    torch.unsqueeze(points, dim=0).to(device)
+                )
+            else:
+                pred_instance_features = instance_model(
+                    torch.unsqueeze(points[:, :3], dim=0).to(device)
+                )
+
+            pred_instance_features = (
+                pred_instance_features.cpu().detach().numpy().squeeze()
+            )
+            clustering = DBSCAN(eps=1, min_samples=10).fit(pred_instance_features)
+            pred_final_cluster = clustering.labels_
+
+            d_colors = distinct_colors(len(list(set(pred_final_cluster))))
+            colors = np.zeros((pred_final_cluster.shape[0], 3))
+            for i, l in enumerate(list(set(pred_final_cluster))):
+                colors[pred_final_cluster == l, :] = d_colors[i]
+
+            metric_calculator = LeafMetrics()
+            acc, precison, recal, f1 = metric_calculator(
+                torch.tensor(pred_final_cluster).unsqueeze(0).unsqueeze(-1),
+                torch.tensor(instance_labels).unsqueeze(0).unsqueeze(-1),
+            )
+
+            fig = plt.figure(figsize=(15, 15))
+            ax = fig.add_subplot(projection="3d")
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=2, c=colors)
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.set_zlabel("z")
+            ax.set_title(
+                f"acc: {acc*100:.2f} - precision: {precison:.2f} - recall: {recal:.2f} - f1: {f1:.2f}"
+            )
+            fig.canvas.draw()
+            X = (
+                torch.tensor(np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3])
+                .transpose(0, 2)
+                .transpose(1, 2)
+            )
+            X = torchvision.transforms.functional.resize(X, (1000, 1000))
+
+            accs.append(acc)
+            precisions.append(precison)
+            recals.append(recal)
+            f1s.append(f1)
+            pred_images.append(X)
+
+        accs = torch.tensor(accs)
+        precisions = torch.tensor(precisions)
+        recals = torch.tensor(recals)
+        f1s = torch.tensor(f1s)
+
+        tensorboard_logs = {
+            "test_real_acc": torch.mean(accs),
+            "test_real_precision": torch.mean(precisions),
+            "test_real_recal": torch.mean(recals),
+            "test_real_f1": torch.mean(f1s),
+        }
+
+        grid = torch.cat(pred_images, 1)
+        self.logger.experiment.add_image(
+            "pred_real_data", grid, self.trainer.current_epoch
+        )
+
+        for key in tensorboard_logs:
+            self.log(
+                key,
+                tensorboard_logs[key],
+                on_step=False,
+                on_epoch=True,
+                prog_bar=False,
+                logger=True,
+            )
+
+        instance_model = self.to(torch.device("cuda"))
+        instance_model.DGCNN_feature_space.device = "cuda"
 
 
 class SorghumPartNetInstanceWithLeafBranch(pl.LightningModule):
