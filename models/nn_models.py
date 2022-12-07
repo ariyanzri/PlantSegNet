@@ -115,7 +115,13 @@ class SorghumPartNetSemantic(pl.LightningModule):
         if "use_normals" not in self.hparams:
             dataset = SorghumDataset(ds_path)
         else:
-            dataset = SorghumDatasetWithNormals(ds_path, self.hparams["use_normals"])
+            dataset = SorghumDatasetWithNormals(
+                ds_path,
+                self.hparams["use_normals"],
+                self.hparams["std_noise"],
+                self.hparams["duplicate_ground_prob"],
+                self.hparams["focal_only_prob"],
+            )
 
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff
@@ -383,7 +389,9 @@ class SorghumPartNetInstance(pl.LightningModule):
         if "use_normals" not in self.hparams:
             dataset = SorghumDataset(ds_path)
         else:
-            dataset = SorghumDatasetWithNormals(ds_path, self.hparams["use_normals"])
+            dataset = SorghumDatasetWithNormals(
+                ds_path, self.hparams["use_normals"], self.hparams["std_noise"]
+            )
 
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff

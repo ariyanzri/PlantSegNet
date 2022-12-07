@@ -79,13 +79,22 @@ class SorghumDatasetWithNormals(data.Dataset):
 
     """
 
-    def __init__(self, h5_filename, use_normals=True, std_coef=0.015):
+    def __init__(
+        self,
+        h5_filename,
+        use_normals=True,
+        std_coef=0.015,
+        duplicate_p=0,
+        focal_only_p=0,
+    ):
         super().__init__()
         self.h5_filename = h5_filename
         self.length = -1
         self.append_normals = use_normals
         self.std_coef = std_coef
         self.is_semantic = "semantic" in h5_filename
+        self.duplicate_ground_probability = duplicate_p
+        self.focal_only_probability = focal_only_p
 
     def semantic_transformations(self, np_points, np_labels):
 
@@ -94,7 +103,7 @@ class SorghumDatasetWithNormals(data.Dataset):
         # ground transformations
 
         rnd_num = np.random.rand(1)
-        if rnd_num >= 0.7:
+        if rnd_num < self.duplicate_ground_probability:
             # add duplicate to the ground points (with probability)
             ground = np.where(np_labels == 0)[0]
             duplicate_indices = np.random.choice(
@@ -103,58 +112,22 @@ class SorghumDatasetWithNormals(data.Dataset):
                 replace=False,
             )
             np_points[duplicate_indices, 2] -= dimension_sizes[2] / 10
-        # elif rnd_num <= 0.3:
-        #     # add separate noise to ground
-        #     np_points[np_labels == 0, 2] += np.random.normal(
-        #         0,
-        #         dimension_sizes[2] / 40,
-        #         size=np_points[np_labels == 0, 2].shape,
-        #     )
-
-        # focal plant transformations
 
         initial_size = np_points.shape[0]
 
         rnd_num = np.random.rand(1)
-        if rnd_num >= 0.7:
+        if rnd_num < self.focal_only_probability:
             # keep only focal plant
             np_points = np_points[(np_labels == 1) | (np_labels == 0), :]
             np_labels = np_labels[(np_labels == 1) | (np_labels == 0)]
-        # elif rnd_num <= 0.1:
-        #     # crop around the focal plant
-        #     focal_points = np_points[np_labels == 1]
-        #     full_mins = np.min(np_points, 0)
-        #     full_maxs = np.max(np_points, 0)
-        #     focal_mins = np.min(focal_points, 0)
-        #     focal_maxs = np.max(focal_points, 0)
-        #     x_1 = random.uniform(full_mins[0], focal_mins[0])
-        #     x_2 = random.uniform(focal_maxs[0], full_maxs[0])
-        #     y_1 = random.uniform(full_mins[1], focal_mins[1])
-        #     y_2 = random.uniform(focal_maxs[1], full_maxs[1])
-        #     np_labels = np_labels[
-        #         (np_points[:, 0] >= x_1)
-        #         & (np_points[:, 0] <= x_2)
-        #         & (np_points[:, 1] >= y_1)
-        #         & (np_points[:, 1] <= y_2)
-        #         & (np_points[:, 2] >= full_mins[2])
-        #         & (np_points[:, 2] <= full_maxs[2])
-        #     ]
-        #     np_points = np_points[
-        #         (np_points[:, 0] >= x_1)
-        #         & (np_points[:, 0] <= x_2)
-        #         & (np_points[:, 1] >= y_1)
-        #         & (np_points[:, 1] <= y_2)
-        #         & (np_points[:, 2] >= full_mins[2])
-        #         & (np_points[:, 2] <= full_maxs[2])
-        #     ]
 
-        focal_indices = np.random.choice(
-            np.arange(0, np_points.shape[0]).tolist(),
-            initial_size,
-            replace=True,
-        )
-        np_points = np_points[focal_indices]
-        np_labels = np_labels[focal_indices]
+            focal_indices = np.random.choice(
+                np.arange(0, np_points.shape[0]).tolist(),
+                initial_size,
+                replace=True,
+            )
+            np_points = np_points[focal_indices]
+            np_labels = np_labels[focal_indices]
 
         return np_points, np_labels
 
@@ -169,12 +142,13 @@ class SorghumDatasetWithNormals(data.Dataset):
             np_points, np_labels = self.semantic_transformations(np_points, np_labels)
 
         # add noise to all points
-        std_points = np.repeat(
-            np.expand_dims(np.std(np_points, 0), 0), np_points.shape[0], 0
-        )
-        np_points += np.random.normal(
-            0, std_points * self.std_coef, size=np_points.shape
-        )
+        if self.std_coef > 0:
+            std_points = np.repeat(
+                np.expand_dims(np.std(np_points, 0), 0), np_points.shape[0], 0
+            )
+            np_points += np.random.normal(
+                0, std_points * self.std_coef, size=np_points.shape
+            )
 
         # convert to torch
         points = torch.from_numpy(np_points).type(torch.DoubleTensor)
