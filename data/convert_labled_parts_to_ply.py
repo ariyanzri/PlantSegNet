@@ -74,6 +74,6 @@ def merge_labled_parts(path, outpath):
 
 
 merge_labled_parts(
-    "/space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/raw/BTx_623_3001_330755982981",
-    "/space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/ply_files/BTx_623_3001_330755982981.ply",
+    "/space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/raw/PI_678337_1604_330750658512",
+    "/space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/ply_files/PI_678337_1604_330750658512.ply",
 )

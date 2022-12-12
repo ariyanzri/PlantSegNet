@@ -24,10 +24,20 @@ def get_args():
     )
 
     parser.add_argument(
-        "-v",
-        "--version",
-        help="The version of the model. If not determined, the latest version would be picked.",
-        metavar="version",
+        "-s",
+        "--semantic_version",
+        help="The version of the semantic model. If not determined, the latest version would be picked.",
+        metavar="semantic_version",
+        required=False,
+        type=int,
+        default=-1,
+    )
+
+    parser.add_argument(
+        "-i",
+        "--instance_version",
+        help="The version of the instance model. If not determined, the latest version would be picked.",
+        metavar="instance_version",
         required=False,
         type=int,
         default=-1,
@@ -160,8 +170,12 @@ def predict_and_save_individual(arguments):
     args = arguments[0]
     pcd_name = arguments[1]
 
-    semantic_model = load_model("SorghumPartNetSemantic", args.version).double()
-    instance_model = load_model("SorghumPartNetInstance", args.version).double()
+    semantic_model = load_model(
+        "SorghumPartNetSemantic", args.semantic_version
+    ).double()
+    instance_model = load_model(
+        "SorghumPartNetInstance", args.instance_version
+    ).double()
 
     try:
 
@@ -222,9 +236,11 @@ def predict_batch(args):
     arguments = []
     for i, pcd_name in enumerate(list_pcd_files):
         # arguments.append((args, pcd_name))
+        print(f"------------------- ({i+1}/{n}) -------------------")
         predict_and_save_individual((args, pcd_name))
-        if i >= 10:
-            break
+        sys.stdout.flush()
+        # if i >= 10:
+        #     break
 
         # print(f"------------- ({i+1}/{n}) -------------")
         # path = os.path.join(args.path, pcd_name)
@@ -274,10 +290,10 @@ def predict_batch(args):
 def main():
     args = get_args()
 
-    if not os.path.exists(args.output):
-        os.makedirs(args.output)
+    # if not os.path.exists(args.output):
+    #     os.makedirs(args.output)
 
-    predict_batch(args)
+    # predict_batch(args)
     create_html(args.output, args.output, "visualization")
     # create_html(args.output, args.output, "visualization")
 

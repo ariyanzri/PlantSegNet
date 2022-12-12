@@ -27,6 +27,12 @@ def create_html(input_directory, output_dir, output_folder_name, screen_w=1600):
 
     rows_texts = ""
     for png_p in png_paths:
+        pcd_name = (
+            png_p.replace("pngs", "").replace("_semantic.png", "").replace("/", "")
+        )
+        rows_texts += "<tr>\n"
+        rows_texts += f'<td style="text-align: center" colspan="2">{pcd_name}</td>'
+        rows_texts += "</tr>\n"
         rows_texts += "<tr>\n"
         rows_texts += f'\t<td><img src="{png_p}" width="{screen_w/2}"/></td>\n'
         rows_texts += f'\t<td><img src="{png_p.replace("semantic","instance")}" width="{screen_w/2}"/></td>\n'

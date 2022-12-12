@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from models.datasets import SorghumDataset, SorghumDatasetWithNormals
 from models.dgcnn import *
+from models.dgcnn_new import DGCNN_partseg
 from collections import namedtuple
 from models.utils import (
     BNMomentumScheduler,
@@ -40,6 +41,23 @@ class SorghumPartNetSemantic(pl.LightningModule):
         self.hparams.update(hparams)
         self.lr_clip = 1e-5
         self.bnm_clip = 1e-2
+
+        # if "emb_dims" in self.hparams:
+        #     MyStruct = namedtuple("args", ["k", "emb_dims", "dropout"])
+        #     args = MyStruct(
+        #         k=self.hparams["dgcnn_k"],
+        #         emb_dims=self.hparams["emb_dims"],
+        #         dropout=self.hparams["dropout"],
+        #     )
+
+        #     self.DGCNN_semantic_segmentor = DGCNN_partseg(args, 3).double()
+        # else:
+        #     self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(
+        #         self.hparams["dgcnn_k"],
+        #         input_dim=(
+        #             3 if "input_dim" not in self.hparams else self.hparams["input_dim"]
+        #         ),
+        #     ).double()
 
         self.DGCNN_semantic_segmentor = DGCNNSemanticSegmentor(
             self.hparams["dgcnn_k"],
@@ -280,20 +298,26 @@ class SorghumPartNetSemantic(pl.LightningModule):
             pred_images.append(X)
 
         accs = torch.tensor(accs)
-
+        print(accs)
+        print(torch.mean(accs))
         grid = torch.cat(pred_images, 1)
         self.logger.experiment.add_image(
             "pred_real_data", grid, self.trainer.current_epoch
         )
 
-        self.log(
-            "test_real_acc",
-            torch.mean(accs),
-            on_step=False,
-            on_epoch=True,
-            prog_bar=False,
-            logger=True,
+        # self.log(
+        #     "test_real_acc",
+        #     torch.mean(accs),
+        #     on_step=False,
+        #     on_epoch=True,
+        #     prog_bar=False,
+        #     logger=True,
+        # )
+        self.logger.experiment.add_scalar(
+            "test_real_acc", torch.mean(accs), self.trainer.current_epoch
         )
+
+        print(self.trainer.current_epoch)
 
         semantic_model = self.to(torch.device("cuda"))
         semantic_model.DGCNN_semantic_segmentor.device = "cuda"
@@ -313,7 +337,10 @@ class SorghumPartNetInstance(pl.LightningModule):
         self.bnm_clip = 1e-2
 
         MyStruct = namedtuple("args", "k")
-        args = MyStruct(k=self.hparams["dgcnn_k"])
+        if "dgcnn_k" in self.hparams:
+            args = MyStruct(k=self.hparams["dgcnn_k"])
+        else:
+            args = MyStruct(k=15)
 
         self.DGCNN_feature_space = DGCNNFeatureSpace(
             args, (3 if "input_dim" not in self.hparams else self.hparams["input_dim"])

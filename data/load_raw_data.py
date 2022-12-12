@@ -99,6 +99,11 @@ def load_pcd_plyfile_new_approach(path, is_instance, down_sample_n=8000):
                     np.arange(0, points.shape[0]).tolist(),
                     min(down_sample_n, points.shape[0]),
                 )
+
+                label_full = np.zeros(is_focal_plant.shape)
+                label_full[(is_focal_plant == 0) & (ground_index == 0)] = 2
+                label_full[(is_focal_plant == 1) & (ground_index == 0)] = 1
+
                 points = points[downsample_indexes]
                 is_focal_plant = is_focal_plant[downsample_indexes].squeeze()
                 ground_index = ground_index[downsample_indexes].squeeze()
@@ -132,6 +137,7 @@ def load_pcd_plyfile_new_approach(path, is_instance, down_sample_n=8000):
                     replace=(True if points_shape < down_sample_n else False),
                 )
 
+                label_full = label
                 points = points[downsample_indexes]
                 label = label[downsample_indexes]
 
@@ -146,6 +152,7 @@ def load_pcd_plyfile_new_approach(path, is_instance, down_sample_n=8000):
             "points_full": points_full,
             "points": points,
             "labels": label,
+            "labels_full": label_full,
             "normals": normals,
         }
 
@@ -194,14 +201,11 @@ def paint_pcd_into_o3d(plyfile_pcd, key):
 
     d_colors = distinct_colors()
 
-    # for i in range(ind_min,ind_max+1):
-    #    colors[plyfile_pcd[key][:,0]==i,:] = d_colors[i+1]
-
     pcd.colors = o3d.utility.Vector3dVector(colors)
     return pcd
 
 
-def load_real_ply_with_labels(path):
+def load_real_ply_with_labels(path, point_threshold=100000):
     with open(path, "rb") as f:
         plydata = PlyData.read(f)
         points = np.asarray(np.array(plydata.elements[0].data).tolist())
@@ -209,4 +213,12 @@ def load_real_ply_with_labels(path):
         semantic_index = np.asarray(
             np.array(plydata.elements[2].data).tolist()
         ).squeeze()
+    if points.shape[0] > point_threshold:
+        downsample_indexes = random.sample(
+            np.arange(0, points.shape[0]).tolist(),
+            min(point_threshold, points.shape[0]),
+        )
+        points = points[downsample_indexes]
+        leaf_index = leaf_index[downsample_indexes]
+        semantic_index = semantic_index[downsample_indexes]
     return points, leaf_index, semantic_index
