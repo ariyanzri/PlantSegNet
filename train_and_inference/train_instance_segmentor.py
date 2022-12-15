@@ -58,8 +58,6 @@ def train():
     if not os.path.exists(chkpt_path):
         os.makedirs(chkpt_path)
 
-    segmentor = SorghumPartNetInstance(hparams).cuda()
-
     checkpoint_callback = ModelCheckpoint(
         save_top_k=3,
         monitor="val_leaf_loss",
@@ -74,6 +72,7 @@ def train():
             max_epochs=hparams["epochs"],
             callbacks=[checkpoint_callback],
         )
+        segmentor = SorghumPartNetInstance(hparams, True).cuda()
     else:
         trainer = pl.Trainer(
             default_root_dir=chkpt_path,
@@ -83,6 +82,7 @@ def train():
             max_epochs=hparams["epochs"],
             callbacks=[checkpoint_callback],
         )
+        segmentor = SorghumPartNetInstance(hparams, False).cuda()
 
     trainer.fit(segmentor, segmentor.train_dataloader(), segmentor.val_dataloader())
 

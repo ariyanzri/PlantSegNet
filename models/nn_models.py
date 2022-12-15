@@ -30,7 +30,7 @@ from data.utils import distinct_colors
 
 
 class SorghumPartNetSemantic(pl.LightningModule):
-    def __init__(self, hparams):
+    def __init__(self, hparams, debug=False):
         """
         Parameters
         ----------
@@ -38,6 +38,7 @@ class SorghumPartNetSemantic(pl.LightningModule):
         """
         super(SorghumPartNetSemantic, self).__init__()
 
+        self.is_debug = debug
         self.hparams.update(hparams)
         self.lr_clip = 1e-5
         self.bnm_clip = 1e-2
@@ -139,6 +140,7 @@ class SorghumPartNetSemantic(pl.LightningModule):
                 self.hparams["std_noise"],
                 self.hparams["duplicate_ground_prob"],
                 self.hparams["focal_only_prob"],
+                debug=self.is_debug,
             )
 
         loader = DataLoader(
@@ -298,8 +300,6 @@ class SorghumPartNetSemantic(pl.LightningModule):
             pred_images.append(X)
 
         accs = torch.tensor(accs)
-        print(accs)
-        print(torch.mean(accs))
         grid = torch.cat(pred_images, 1)
         self.logger.experiment.add_image(
             "pred_real_data", grid, self.trainer.current_epoch
@@ -317,14 +317,12 @@ class SorghumPartNetSemantic(pl.LightningModule):
             "test_real_acc", torch.mean(accs), self.trainer.current_epoch
         )
 
-        print(self.trainer.current_epoch)
-
         semantic_model = self.to(torch.device("cuda"))
         semantic_model.DGCNN_semantic_segmentor.device = "cuda"
 
 
 class SorghumPartNetInstance(pl.LightningModule):
-    def __init__(self, hparams):
+    def __init__(self, hparams, debug=False):
         """
         Parameters
         ----------
@@ -332,6 +330,7 @@ class SorghumPartNetInstance(pl.LightningModule):
         """
         super(SorghumPartNetInstance, self).__init__()
 
+        self.is_debug = debug
         self.hparams.update(hparams)
         self.lr_clip = 1e-5
         self.bnm_clip = 1e-2
@@ -417,7 +416,10 @@ class SorghumPartNetInstance(pl.LightningModule):
             dataset = SorghumDataset(ds_path)
         else:
             dataset = SorghumDatasetWithNormals(
-                ds_path, self.hparams["use_normals"], self.hparams["std_noise"]
+                ds_path,
+                self.hparams["use_normals"],
+                self.hparams["std_noise"],
+                debug=self.is_debug,
             )
 
         loader = DataLoader(
@@ -532,8 +534,10 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         for file in files:
             path = os.path.join(real_data_path, file)
-            points, instance_labels, semantic_labels = load_real_ply_with_labels(path)
-            points = points[semantic_labels == 1]
+            main_points, instance_labels, semantic_labels = load_real_ply_with_labels(
+                path
+            )
+            points = main_points[semantic_labels == 1]
             instance_labels = instance_labels[semantic_labels == 1]
 
             points = torch.tensor(points, dtype=torch.float64).to(device)
@@ -560,6 +564,12 @@ class SorghumPartNetInstance(pl.LightningModule):
             for i, l in enumerate(list(set(pred_final_cluster))):
                 colors[pred_final_cluster == l, :] = d_colors[i]
 
+            non_focal_points = main_points[semantic_labels == 2]
+            ground_points = main_points[semantic_labels == 0]
+
+            non_focal_color = [0, 0, 0.7, 0.3]
+            ground_color = [0.3, 0.1, 0, 0.3]
+
             metric_calculator = LeafMetrics()
             acc, precison, recal, f1 = metric_calculator(
                 torch.tensor(pred_final_cluster).unsqueeze(0).unsqueeze(-1),
@@ -568,7 +578,21 @@ class SorghumPartNetInstance(pl.LightningModule):
 
             fig = plt.figure(figsize=(15, 15))
             ax = fig.add_subplot(projection="3d")
-            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=2, c=colors)
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=4, c=colors)
+            ax.scatter(
+                non_focal_points[:, 0],
+                non_focal_points[:, 1],
+                non_focal_points[:, 2],
+                s=1,
+                color=non_focal_color,
+            )
+            ax.scatter(
+                ground_points[:, 0],
+                ground_points[:, 1],
+                ground_points[:, 2],
+                s=1,
+                color=ground_color,
+            )
             ax.set_xlabel("x")
             ax.set_ylabel("y")
             ax.set_zlabel("z")
@@ -607,13 +631,8 @@ class SorghumPartNetInstance(pl.LightningModule):
         )
 
         for key in tensorboard_logs:
-            self.log(
-                key,
-                tensorboard_logs[key],
-                on_step=False,
-                on_epoch=True,
-                prog_bar=False,
-                logger=True,
+            self.logger.experiment.add_scalar(
+                key, tensorboard_logs[key], self.trainer.current_epoch
             )
 
         instance_model = self.to(torch.device("cuda"))

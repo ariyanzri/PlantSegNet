@@ -86,6 +86,7 @@ class SorghumDatasetWithNormals(data.Dataset):
         std_coef=0.015,
         duplicate_p=0,
         focal_only_p=0,
+        debug=False,
     ):
         super().__init__()
         self.h5_filename = h5_filename
@@ -95,6 +96,7 @@ class SorghumDatasetWithNormals(data.Dataset):
         self.is_semantic = "semantic" in h5_filename
         self.duplicate_ground_probability = duplicate_p
         self.focal_only_probability = focal_only_p
+        self.is_debug = debug
 
     def semantic_transformations(self, np_points, np_labels):
 
@@ -173,7 +175,8 @@ class SorghumDatasetWithNormals(data.Dataset):
             f = h5py.File(self.h5_filename, "r")
             self.length = len(f["points"])
             f.close()
-            # self.length = 50
+            if self.is_debug:
+                self.length = 50
             return self.length
 
 
