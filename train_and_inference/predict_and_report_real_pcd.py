@@ -5,6 +5,7 @@ import open3d as o3d
 import torch.nn.functional as F
 import sys
 import random
+import glob
 
 sys.path.append("..")
 from models.nn_models import *
@@ -167,7 +168,7 @@ def load_model_chkpoint(model, path):
     return model
 
 
-def load_model(model_name, version):
+def load_model(model_name, version, checkpoint=None):
     if version == -1:
         versions = os.listdir(
             f"/space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/{model_name}/lightning_logs"
@@ -175,7 +176,17 @@ def load_model(model_name, version):
         version = sorted(versions)[-1].split("_")[-1]
 
     path_all_checkpoints = f"/space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/{model_name}/lightning_logs/version_{version}/checkpoints"
-    path = sorted(os.listdir(path_all_checkpoints))[-1]
+    if checkpoint is None:
+
+        path = sorted(os.listdir(path_all_checkpoints))[-1]
+    else:
+        checkpoint_path = glob.glob(
+            os.path.join(path_all_checkpoints, f"epoch={checkpoint}-*")
+        )
+        if len(checkpoint_path) != 1:
+            return None
+        path = os.path.basename(os.path.normpath(checkpoint_path[0]))
+
     print("Using Version ", version, " and ", path)
 
     model = load_model_chkpoint(model_name, os.path.join(path_all_checkpoints, path))
