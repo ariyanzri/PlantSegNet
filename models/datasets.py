@@ -3,6 +3,7 @@ import numpy as np
 import torch.utils.data as data
 import h5py
 import random
+import os
 
 
 class SorghumDataset(data.Dataset):
@@ -219,3 +220,43 @@ class LeafDataset(data.Dataset):
         f = h5py.File(self.h5_filename, "r")
         name = f["names"][index].decode("utf-8")
         return name
+
+
+class PartNetDataset(data.Dataset):
+    def __init__(
+        self,
+        path,
+        object_name,
+        set_type,
+    ):
+        super().__init__()
+        self.h5_filename = os.path.join(path, object_name, f"{set_type}-00.h5")
+        if not os.path.exists(self.h5_filename):
+            raise Exception(
+                "Either path, object_name or set_type is incorrect. Please make sure you are inputing correct values."
+            )
+        self.length = -1
+
+    def __getitem__(self, index):
+        f = h5py.File(self.h5_filename, "r")
+        np_points = f["pts"][index]
+        np_labels = f["label"][index].squeeze()
+
+        # convert to torch
+        points = torch.from_numpy(np_points).type(torch.DoubleTensor)
+        labels = torch.from_numpy(np_labels).type(torch.LongTensor)
+        f.close()
+
+        return (
+            points,
+            labels,
+        )
+
+    def __len__(self):
+        if self.length != -1:
+            return self.length
+        else:
+            f = h5py.File(self.h5_filename, "r")
+            self.length = len(f["pts"])
+            f.close()
+            return self.length
