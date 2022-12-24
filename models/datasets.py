@@ -260,3 +260,42 @@ class PartNetDataset(data.Dataset):
             self.length = len(f["pts"])
             f.close()
             return self.length
+
+
+class TreePartNetDataset(data.Dataset):
+    def __init__(
+        self,
+        path,
+        set_type,
+    ):
+        super().__init__()
+        self.h5_filename = os.path.join(path, f"tree_labeled_{set_type}.hdf5")
+        if not os.path.exists(self.h5_filename):
+            raise Exception(
+                "Either path or set_type is incorrect. Please make sure you are inputing correct values."
+            )
+        self.length = -1
+
+    def __getitem__(self, index):
+        f = h5py.File(self.h5_filename, "r")
+        np_points = f["points"][index]
+        np_labels = f["primitive_id"][index].squeeze()
+
+        # convert to torch
+        points = torch.from_numpy(np_points).type(torch.DoubleTensor)
+        labels = torch.from_numpy(np_labels).type(torch.LongTensor)
+        f.close()
+
+        return (
+            points,
+            labels,
+        )
+
+    def __len__(self):
+        if self.length != -1:
+            return self.length
+        else:
+            f = h5py.File(self.h5_filename, "r")
+            self.length = len(f["pts"])
+            f.close()
+            return self.length
