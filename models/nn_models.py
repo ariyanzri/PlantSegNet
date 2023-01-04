@@ -8,7 +8,12 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_sched
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from models.datasets import SorghumDataset, SorghumDatasetWithNormals
+from models.datasets import (
+    SorghumDataset,
+    SorghumDatasetWithNormals,
+    TreePartNetDataset,
+    PartNetDataset,
+)
 from models.dgcnn import *
 from models.dgcnn_new import DGCNN_partseg
 from collections import namedtuple
@@ -415,12 +420,23 @@ class SorghumPartNetInstance(pl.LightningModule):
         if "use_normals" not in self.hparams:
             dataset = SorghumDataset(ds_path)
         else:
-            dataset = SorghumDatasetWithNormals(
-                ds_path,
-                self.hparams["use_normals"],
-                self.hparams["std_noise"],
-                debug=self.is_debug,
-            )
+            if "dataset" not in self.hparams or self.hparams["dataset"] == "SPN":
+                dataset = SorghumDatasetWithNormals(
+                    ds_path,
+                    self.hparams["use_normals"],
+                    self.hparams["std_noise"],
+                    debug=self.is_debug,
+                )
+            elif self.hparams["dataset"] == "TPN":
+                dataset = TreePartNetDataset(
+                    ds_path,
+                    debug=self.is_debug,
+                )
+            elif self.hparams["dataset"] == "PN":
+                dataset = PartNetDataset(
+                    ds_path,
+                    debug=self.is_debug,
+                )
 
         loader = DataLoader(
             dataset, batch_size=self.hparams["batch_size"], num_workers=4, shuffle=shuff
@@ -514,7 +530,8 @@ class SorghumPartNetInstance(pl.LightningModule):
         return tensorboard_logs
 
     def validation_epoch_end(self, batch):
-        self.validation_real_data()
+        if "real_data" in self.hparams:
+            self.validation_real_data()
 
     def validation_real_data(self):
         real_data_path = self.hparams["real_data"]

@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.optim.lr_scheduler as lr_sched
 import torch
+import numpy as np
 from torchmetrics import Accuracy
 from torchmetrics.functional import f1, precision_recall
 from sklearn.cluster import DBSCAN
@@ -242,6 +243,47 @@ class SemanticMetrics(nn.Module):
         Acc = self.accuracy_fn(input, target)
 
         return Acc.item()
+
+
+class AveragePrecision(nn.Module):
+    def __init__(self, iou_th, device_name="cpu"):
+        super().__init__()
+        self.device_name = device_name
+        self.iou_threshold = iou_th
+
+    def forward(self, input, target):
+
+        if len(input.shape) != 1:
+            raise Exception(
+                f"Incorrect shape of the input tensor. It should have 1 dimensions (N) but it has shape {input.shape}. "
+            )
+
+        if len(target.shape) != 1:
+            raise Exception(
+                f"Incorrect shape of the target tensor. It should have 1 dimensions (N) but it has shape {target.shape}. "
+            )
+
+        gt_cluster_labels = list(set(target.int().numpy().tolist()))
+        pr_cluster_labels = list(set(input.int().numpy().tolist()))
+
+        average_precision = 0
+        for gt_cluster in gt_cluster_labels:
+            TP = 0
+            FP = 0
+            for pr_cluster in pr_cluster_labels:
+                pr_point_indices = (input == pr_cluster).nonzero().squeeze().numpy()
+                gt_point_indices = (target == gt_cluster).nonzero().squeeze().numpy()
+                intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
+                union = np.union1d(pr_point_indices, gt_point_indices)
+                iou = len(intersection) / len(union)
+                if iou >= self.iou_threshold:
+                    TP += 1
+                elif iou > 0:
+                    FP += 1
+            precision = TP / (TP + FP)
+            average_precision += precision
+
+        return average_precision / len(gt_cluster_labels)
 
 
 def binary_acc(out, target):

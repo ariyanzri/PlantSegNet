@@ -35,16 +35,6 @@ def get_args():
         type=str,
     )
 
-    parser.add_argument(
-        "-l",
-        "--label",
-        help="The label (index) to use for generating the dataset. Default is leaf_index.",
-        metavar="label",
-        required=False,
-        type=str,
-        default="leaf_index",
-    )
-
     return parser.parse_args()
 
 
@@ -207,6 +197,8 @@ def generate_h5py_semantic(
     dataset = {"points": [], "normals": [], "labels": []}
 
     for i, f in enumerate(files):
+        # if i == 20:
+        #     break
         pcd = load_pcd_plyfile_new_approach(
             os.path.join(path_raw_data, f), False, down_sample_n=point_no
         )
@@ -305,6 +297,8 @@ def generate_h5py_instance(
     dataset = {"points": [], "normals": [], "labels": []}
 
     for i, f in enumerate(files):
+        # if i == 20:
+        #     break
         pcd = load_pcd_plyfile_new_approach(
             os.path.join(path_raw_data, f), True, down_sample_n=point_no
         )

@@ -223,17 +223,13 @@ class LeafDataset(data.Dataset):
 
 
 class PartNetDataset(data.Dataset):
-    def __init__(
-        self,
-        path,
-        object_name,
-        set_type,
-    ):
+    def __init__(self, path, debug=False):
         super().__init__()
-        self.h5_filename = os.path.join(path, object_name, f"{set_type}-00.h5")
+        self.h5_filename = path
+        self.is_debug = debug
         if not os.path.exists(self.h5_filename):
             raise Exception(
-                "Either path, object_name or set_type is incorrect. Please make sure you are inputing correct values."
+                "H5py file doesn't exist. Please make sure you are inputing correct values."
             )
         self.length = -1
 
@@ -259,20 +255,19 @@ class PartNetDataset(data.Dataset):
             f = h5py.File(self.h5_filename, "r")
             self.length = len(f["pts"])
             f.close()
+            if self.is_debug:
+                self.length = 50
             return self.length
 
 
 class TreePartNetDataset(data.Dataset):
-    def __init__(
-        self,
-        path,
-        set_type,
-    ):
+    def __init__(self, path, debug=False):
         super().__init__()
-        self.h5_filename = os.path.join(path, f"tree_labeled_{set_type}.hdf5")
+        self.h5_filename = path
+        self.is_debug = debug
         if not os.path.exists(self.h5_filename):
             raise Exception(
-                "Either path or set_type is incorrect. Please make sure you are inputing correct values."
+                "H5py file doesn't exist. Please make sure you are inputing correct values."
             )
         self.length = -1
 
@@ -296,6 +291,8 @@ class TreePartNetDataset(data.Dataset):
             return self.length
         else:
             f = h5py.File(self.h5_filename, "r")
-            self.length = len(f["pts"])
+            self.length = len(f["points"])
             f.close()
+            if self.is_debug:
+                self.length = 50
             return self.length

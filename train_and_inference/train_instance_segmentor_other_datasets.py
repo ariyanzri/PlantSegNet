@@ -54,15 +54,7 @@ def train():
     args = get_args()
     hparams = get_hparam(args.hparam)
 
-    if "dataset" in hparams and (
-        hparams["dataset"] == "TPN" or hparams["dataset"] == "PN"
-    ):
-        chkpt_path = os.path.join(
-            args.output, hparams["dataset"], "SorghumPartNetInstance"
-        )
-    else:
-        chkpt_path = os.path.join(args.output, "SorghumPartNetInstance")
-
+    chkpt_path = os.path.join(args.output, "SorghumPartNetInstance")
     if not os.path.exists(chkpt_path):
         os.makedirs(chkpt_path)
 
