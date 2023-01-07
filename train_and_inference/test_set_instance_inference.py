@@ -19,7 +19,7 @@ from sklearn.cluster import DBSCAN
 
 def get_args():
     parser = argparse.ArgumentParser(
-        description="Test set inference script. This script runs the instance segmentation model on the test sets of the give dataset.",
+        description="Test set inference script. This script runs the instance segmentation model on the test sets of the given dataset.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -59,7 +59,22 @@ def get_args():
         type=str,
     )
 
+    parser.add_argument(
+        "-p",
+        "--param",
+        help="The path to the best params path (for DBSCAN parameters). ",
+        metavar="param",
+        required=True,
+        type=str,
+    )
+
     return parser.parse_args()
+
+
+def get_best_param(path):
+    with open(path, "r") as f:
+        params_dict = json.load(f)
+    return params_dict
 
 
 def load_model(model, path):
@@ -110,13 +125,17 @@ def load_data_directory(path):
 
 
 def get_final_clusters(preds, DBSCAN_eps=1, DBSCAN_min_samples=10):
-    preds = preds.cpu().detach().numpy().squeeze()
-    clustering = DBSCAN(eps=DBSCAN_eps, min_samples=DBSCAN_min_samples).fit(preds)
-    final_clusters = clustering.labels_
-    return final_clusters
+    try:
+        preds = preds.cpu().detach().numpy().squeeze()
+        clustering = DBSCAN(eps=DBSCAN_eps, min_samples=DBSCAN_min_samples).fit(preds)
+        final_clusters = clustering.labels_
+        return final_clusters
+    except Exception as e:
+        print(e)
+        return None
 
 
-def run_inference(model, data, label):
+def run_inference(model, data, label, best_params):
     data = torch.Tensor(data).double().cpu()
     label = torch.Tensor(label).float().squeeze().cpu()
     model = model.cpu()
@@ -139,7 +158,12 @@ def run_inference(model, data, label):
 
     for i in range(data.shape[0]):
         preds = model(data[i : i + 1])
-        pred_clusters = torch.tensor(get_final_clusters(preds, 2))
+        pred_clusters = get_final_clusters(
+            preds, best_params["eps"], best_params["minpoints"]
+        )
+        if pred_clusters is None:
+            continue
+        pred_clusters = torch.tensor(pred_clusters)
 
         acc, precison, recal, f1 = metric_calculator(
             pred_clusters.unsqueeze(0).unsqueeze(-1),
@@ -163,6 +187,9 @@ def run_inference(model, data, label):
 
         ap = ap_calculator(pred_clusters.squeeze(), label[i].squeeze())
         aps.append(ap)
+
+        print(f":: Instance {i}/{data.shape[0]}= Accuracy: {acc} - AP: {ap}")
+        sys.stdout.flush()
 
     full_results_dic = {
         "pointwise_accuracies": pointwise_accuracies,
@@ -203,6 +230,7 @@ def save_results(
 
 def main():
     args = get_args()
+    best_params = get_best_param(args.param)
 
     output_dir = os.path.join(args.output, args.dataset)
     if not os.path.exists(output_dir):
@@ -222,12 +250,17 @@ def main():
         print(":: Incorrect dataset name. ")
         return
 
+    print(
+        f":: Starting the inference with the following parameters --> eps: {best_params['eps']} - minpoints: {best_params['minpoints']}"
+    )
+    sys.stdout.flush()
+
     (
         full_results_dic,
         mean_results_dic,
         best_example_ply,
         worst_example_ply,
-    ) = run_inference(model, data, label)
+    ) = run_inference(model, data, label, best_params)
     save_results(
         output_dir,
         full_results_dic,
@@ -242,8 +275,8 @@ main()
 """
 Running argument samples for all datasets:
 
-SPNS: python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5/instance_segmentation_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_12/checkpoints/epoch\=8-step\=48599.ckpt -d SPNS
-SPNR: python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/ply_files/ -o /space/ariyanzarei/sorghum_segmentation/results -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_12/checkpoints/epoch\=8-step\=48599.ckpt -d SPNR
-TPN: python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/TreePartNetData/tree_labeled_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/TPN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=4409.ckpt -d TPN
-PN: python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/PartNetData/h5/Bed/test-00.h5 -o /space/ariyanzarei/sorghum_segmentation/results -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/PN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=169.ckpt -d PN
+SPNS: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5/instance_segmentation_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_13/checkpoints/epoch=8-step=43199.ckpt -d SPNS -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json &>nohup_test.out&
+SPNR: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/ply_files/ -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_13/checkpoints/epoch=8-step=43199.ckpt -d SPNR -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json &>nohup_test.out&
+TPN: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/TreePartNetData/tree_labeled_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/TPN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=4409.ckpt -d TPN -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/TPN/DBSCAN_best_param.json &>nohup_test.out&
+PN: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/PartNetData/h5/Bed/test-00.h5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/PN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=169.ckpt -d PN -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/PN/DBSCAN_best_param.json &>nohup_test.out&
 """
