@@ -136,7 +136,7 @@ def get_final_clusters(preds, DBSCAN_eps=1, DBSCAN_min_samples=10):
 
 
 def run_inference(model, data, label, best_params):
-    data = torch.Tensor(data).double().cpu()
+    data = torch.from_numpy(data).type(torch.DoubleTensor)
     label = torch.Tensor(label).float().squeeze().cpu()
     model = model.cpu()
     model.DGCNN_feature_space.device = "cpu"
@@ -208,10 +208,12 @@ def run_inference(model, data, label, best_params):
     }
 
     best_example_ply = create_ply_pcd_from_points_with_labels(
-        data[best_acc_index].squeeze().numpy(), best_acc_preds.squeeze().numpy()
+        data[best_acc_index].squeeze().numpy(),
+        best_acc_preds.squeeze().numpy(),
     )
     worst_example_ply = create_ply_pcd_from_points_with_labels(
-        data[worst_acc_index].squeeze().numpy(), worst_acc_preds.squeeze().numpy()
+        data[worst_acc_index].squeeze().numpy(),
+        worst_acc_preds.squeeze().numpy(),
     )
 
     return full_results_dic, mean_results_dic, best_example_ply, worst_example_ply
