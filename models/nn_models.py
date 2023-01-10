@@ -12,6 +12,7 @@ from models.datasets import (
     SorghumDataset,
     SorghumDatasetWithNormals,
     TreePartNetDataset,
+    TreePartNetOriginalDataset,
     PartNetDataset,
 )
 from models.dgcnn import *
@@ -943,9 +944,6 @@ class TreePartNet(pl.LightningModule):
                 l_xyz[i - 1], l_xyz[i], l_features[i - 1], l_features[i]
             )
 
-        # Semantic Label Prediction
-        sem_pred = self.fc_layer(l_features[0])
-
         # Local Context Label Prediction
         point_feat = torch.unsqueeze(l_features[0], dim=-2)
         point_feat = point_feat.repeat(1, 1, self.hparams["lc_count"], 1)
@@ -972,11 +970,7 @@ class TreePartNet(pl.LightningModule):
 
         fnode_pred = dot - self.scale * dis
 
-        # FPS Sample Points
-        lc_idx = l_s_idx[0]
-        lc_idx = lc_idx[:, 0 : self.hparams["lc_count"]]
-
-        return sem_pred, lc_pred, fnode_pred, lc_idx
+        return lc_pred, fnode_pred
 
     def configure_optimizers(self):
         lr_lbmd = lambda _: max(
@@ -1026,7 +1020,7 @@ class TreePartNet(pl.LightningModule):
         elif self.hparams["dataset"] == "TPN":
             # Needs to be updated according to the requirements for the loss
             # in the training and validation steps
-            dataset = TreePartNetDataset(
+            dataset = TreePartNetOriginalDataset(
                 ds_path,
                 debug=self.is_debug,
             )
@@ -1045,78 +1039,33 @@ class TreePartNet(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["train_data"], shuff=True)
 
     def training_step(self, batch, batch_idx):
-        points, is_focal_plant, initial_fine_cluster, leaf_part, affinity_matrix = batch
-        (
-            pred_is_focal_plant,
-            pred_initial_fine_cluster,
-            pred_leaf_part,
-            pred_affinity_matrix,
-        ) = self(points)
-
+        pxyz, lcl, fn = batch
+        pred_lcl, fnode_pred = self(pxyz)
         critirion = torch.nn.CrossEntropyLoss()
-        is_focal_plant_loss = critirion(pred_is_focal_plant, is_focal_plant)
-        leaf_part_loss = critirion(pred_leaf_part, leaf_part)
-        initial_fine_cluster_loss = critirion(
-            pred_initial_fine_cluster, initial_fine_cluster
-        )
-
+        lc_loss = critirion(pred_lcl, lcl)
         critirion2 = FocalLoss(
             alpha=self.hparams["FL_alpha"],
             gamma=self.hparams["FL_gamma"],
             reduce="mean",
         )
-        affinity_matrix_loss = critirion2(pred_affinity_matrix, affinity_matrix)
-
-        total_loss = (
-            is_focal_plant_loss
-            + initial_fine_cluster_loss
-            + leaf_part_loss
-            + affinity_matrix_loss
-        )
+        fn_loss = critirion2(fnode_pred, fn)
+        total_loss = lc_loss + fn_loss
 
         with torch.no_grad():
-            is_focal_plant_acc = (
-                (torch.argmax(pred_is_focal_plant, dim=1) == is_focal_plant)
-                .float()
-                .mean()
-            )
-            leaf_part_acc = (
-                (torch.argmax(pred_leaf_part, dim=1) == leaf_part).float().mean()
-            )
-            initial_fine_cluster_acc = (
-                (torch.argmax(pred_initial_fine_cluster, dim=1) == initial_fine_cluster)
-                .float()
-                .mean()
-            )
-            # affinity_matrix prediction
-            o = pred_affinity_matrix > 0
-            o = o.int()
-            # affinity_matrix_acc = (o == affinity_matrix).float().mean()
-            tp = torch.sum((affinity_matrix == 1) & (o == 1))
-            pp = o.sum()
-            ap = affinity_matrix.sum()
-            affinity_matrix_recall = tp.float() / ap.float()
-            affinity_matrix_precision = tp.float() / pp.float()
-            f1_score = (
-                2
-                * affinity_matrix_recall
-                * affinity_matrix_precision
-                / (affinity_matrix_recall + affinity_matrix_precision)
-            )
 
-        tensorboard_logs = {
-            "train_loss": total_loss,
-            "is_focal_plant_loss": is_focal_plant_loss,
-            "leaf_part_loss": leaf_part_loss,
-            "leaf_part_acc": leaf_part_acc,
-            "initial_fine_cluster_loss": initial_fine_cluster_loss,
-            "affinity_matrix_loss": affinity_matrix_loss,
-            "affinity_matrix_f1_score": f1_score,
-            "affinity_matrix_recall": affinity_matrix_recall,
-            "affinity_matrix_precision": affinity_matrix_precision,
-            "is_focal_plant_acc": is_focal_plant_acc,
-            "initial_fine_cluster_acc": initial_fine_cluster_acc,
-        }
+            leaf_metrics = LeafMetrics("cuda")
+            acc, prec, recal, f1 = leaf_metrics(
+                torch.argmax(pred_lcl, dim=1).unsqueeze(-1), lcl.unsqueeze(-1)
+            )
+            tensorboard_logs = {
+                "train_loss": total_loss,
+                "train_local_context_loss": lc_loss,
+                "train_fnode_loss": fn_loss,
+                "train_local_context_acc": acc,
+                "train_local_context_prec": prec,
+                "train_local_context_recal": recal,
+                "train_local_context_f1": f1,
+            }
 
         for k in tensorboard_logs.keys():
             self.log(
@@ -1134,111 +1083,40 @@ class TreePartNet(pl.LightningModule):
         return self._build_dataloader(ds_path=self.hparams["val_data"], shuff=False)
 
     def validation_step(self, batch, batch_idx):
-        points, is_focal_plant, initial_fine_cluster, leaf_part, affinity_matrix = batch
-        (
-            pred_is_focal_plant,
-            pred_initial_fine_cluster,
-            pred_leaf_part,
-            pred_affinity_matrix,
-        ) = self(points)
-
+        pxyz, lcl, fn = batch
+        pred_lcl, fnode_pred = self(pxyz)
         critirion = torch.nn.CrossEntropyLoss()
-        is_focal_plant_loss = critirion(pred_is_focal_plant, is_focal_plant)
-        leaf_part_loss = critirion(pred_leaf_part, leaf_part)
-        initial_fine_cluster_loss = critirion(
-            pred_initial_fine_cluster, initial_fine_cluster
-        )
-
+        lc_loss = critirion(pred_lcl, lcl)
         critirion2 = FocalLoss(
             alpha=self.hparams["FL_alpha"],
             gamma=self.hparams["FL_gamma"],
             reduce="mean",
         )
-        affinity_matrix_loss = critirion2(pred_affinity_matrix, affinity_matrix)
+        fn_loss = critirion2(fnode_pred, fn)
+        total_loss = lc_loss + fn_loss
 
-        total_loss = (
-            is_focal_plant_loss
-            + initial_fine_cluster_loss
-            + leaf_part_loss
-            + affinity_matrix_loss
+        leaf_metrics = LeafMetrics("cuda")
+        acc, prec, recal, f1 = leaf_metrics(
+            torch.argmax(pred_lcl, dim=1).unsqueeze(-1), lcl.unsqueeze(-1)
         )
-
-        is_focal_plant_acc = (
-            (torch.argmax(pred_is_focal_plant, dim=1) == is_focal_plant).float().mean()
-        )
-        leaf_part_acc = (
-            (torch.argmax(pred_leaf_part, dim=1) == leaf_part).float().mean()
-        )
-        initial_fine_cluster_acc = (
-            (torch.argmax(pred_initial_fine_cluster, dim=1) == initial_fine_cluster)
-            .float()
-            .mean()
-        )
-        o = pred_affinity_matrix > 0
-        o = o.int()
-        # affinity_matrix_acc = (o == affinity_matrix).float().mean()
-        tp = torch.sum((affinity_matrix == 1) & (o == 1))
-        pp = o.sum()
-        ap = affinity_matrix.sum()
-        affinity_matrix_recall = tp.float() / ap.float()
-        affinity_matrix_precision = tp.float() / pp.float()
-        f1_score = (
-            2
-            * affinity_matrix_recall
-            * affinity_matrix_precision
-            / (affinity_matrix_recall + affinity_matrix_precision)
-        )
-
         tensorboard_logs = {
             "val_loss": total_loss,
-            "val_is_focal_plant_acc": is_focal_plant_acc,
-            "val_leaf_part_acc": leaf_part_acc,
-            "val_initial_fine_cluster_acc": initial_fine_cluster_acc,
-            "val_initial_fine_cluster_loss": initial_fine_cluster_loss,
-            "val_affinity_matrix_f1_score": f1_score,
-            "val_affinity_matrix_recall": affinity_matrix_recall,
-            "val_affinity_matrix_loss": affinity_matrix_loss,
-            "val_affinity_matrix_precision": affinity_matrix_precision,
-        }
-
-        return tensorboard_logs
-
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
-        sem_acc = torch.stack([x["val_is_focal_plant_acc"] for x in outputs]).mean()
-        leaf_part_acc = torch.stack([x["val_leaf_part_acc"] for x in outputs]).mean()
-        lc_acc = torch.stack(
-            [x["val_initial_fine_cluster_acc"] for x in outputs]
-        ).mean()
-        lc_loss = torch.stack(
-            [x["val_initial_fine_cluster_loss"] for x in outputs]
-        ).mean()
-        f1_score = torch.stack(
-            [x["val_affinity_matrix_f1_score"] for x in outputs]
-        ).mean()
-        affinity_matrix_recall = torch.stack(
-            [x["val_affinity_matrix_recall"] for x in outputs]
-        ).mean()
-        affinity_matrix_precision = torch.stack(
-            [x["val_affinity_matrix_precision"] for x in outputs]
-        ).mean()
-        affinity_matrix_loss = torch.stack(
-            [x["val_affinity_matrix_loss"] for x in outputs]
-        ).mean()
-
-        tensorboard_logs = {
-            "val_total_loss": avg_loss,
-            "val_is_focal_plant_acc": sem_acc,
-            "val_leaf_part_acc": leaf_part_acc,
-            "val_initial_fine_cluster_acc": lc_acc,
-            "val_affinity_matrix_f1_score": f1_score,
-            "val_affinity_matrix_recall": affinity_matrix_recall,
-            "val_initial_fine_cluster_loss": lc_loss,
-            "val_affinity_matrix_loss": affinity_matrix_loss,
-            "val_affinity_matrix_precision": affinity_matrix_precision,
+            "val_local_context_loss": lc_loss,
+            "val_fnode_loss": fn_loss,
+            "val_local_context_acc": acc,
+            "val_local_context_prec": prec,
+            "val_local_context_recal": recal,
+            "val_local_context_f1": f1,
         }
 
         for k in tensorboard_logs.keys():
-            self.log(k, tensorboard_logs[k], on_epoch=True, prog_bar=True, logger=True)
+            self.log(
+                k,
+                tensorboard_logs[k],
+                on_step=True,
+                on_epoch=True,
+                prog_bar=True,
+                logger=True,
+            )
 
-        return {"val_loss": avg_loss, "log": tensorboard_logs}
+        return tensorboard_logs

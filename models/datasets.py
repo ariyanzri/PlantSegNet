@@ -312,19 +312,17 @@ class TreePartNetOriginalDataset(data.Dataset):
     def __getitem__(self, index):
         f = h5py.File(self.h5_filename, "r")
         points = f["points"][index]
-        isforks = f["isforks"][index]
         primitives = f["primitive_id"][index]
         fnodes = f["codebook"][index]
         f.close()
 
         # convert to torch
-        points = torch.from_numpy(points).type(torch.DoubleTensor)
-        isforks = torch.from_numpy(isforks).type(torch.LongTensor)
-        primitives = torch.from_numpy(primitives).type(torch.LongTensor)
-        fnodes = torch.from_numpy(fnodes).type(torch.LongTensor)
+        points = torch.from_numpy(points).float()
+        primitives = torch.from_numpy(primitives)
+        fnodes = torch.from_numpy(fnodes)
         f.close()
 
-        return (points, isforks, primitives, fnodes)
+        return (points, primitives, fnodes)
 
     def __len__(self):
         if self.length != -1:
