@@ -10,7 +10,7 @@ import sys
 
 sys.path.append("..")
 from data.load_raw_data import load_real_ply_with_labels
-from models.nn_models import SorghumPartNetInstance
+from models.nn_models import TreePartNet
 from models.utils import LeafMetrics, AveragePrecision
 from data.utils import create_ply_pcd_from_points_with_labels
 
@@ -19,7 +19,7 @@ from sklearn.cluster import DBSCAN
 
 def get_args():
     parser = argparse.ArgumentParser(
-        description="Test set inference script. This script runs the instance segmentation model on the test sets of the given dataset.",
+        description="Test set inference script for the TreePartNet model. This script runs the instance segmentation model on the test sets of the given dataset. So far it only works with the TPN dataset",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -44,7 +44,7 @@ def get_args():
     parser.add_argument(
         "-d",
         "--dataset",
-        help="The name of the dataset. It should be either SPNR (SPN Real), SPNS (SPN Synthetic), PN, TPN. ",
+        help="The name of the dataset. It can only be TPN at this point. In future, we prepare the SPN dataset for it too.  ",
         metavar="dataset",
         required=True,
         type=str,
@@ -59,22 +59,7 @@ def get_args():
         type=str,
     )
 
-    parser.add_argument(
-        "-p",
-        "--param",
-        help="The path to the best params path (for DBSCAN parameters). ",
-        metavar="param",
-        required=True,
-        type=str,
-    )
-
     return parser.parse_args()
-
-
-def get_best_param(path):
-    with open(path, "r") as f:
-        params_dict = json.load(f)
-    return params_dict
 
 
 def load_model(model, path):
@@ -90,58 +75,39 @@ def load_data_h5(path, point_key, label_key):
     return data, label
 
 
-def load_data_directory(path):
-    data = []
-    labels = []
-    min_shape = sys.maxsize
-
-    for p in os.listdir(path):
-        file_path = os.path.join(path, p)
-        points, instance_labels, semantic_labels = load_real_ply_with_labels(file_path)
-        instance_points = points[semantic_labels == 1]
-        instance_labels = instance_labels[semantic_labels == 1]
-        data.append(instance_points)
-        labels.append(instance_labels)
-        if instance_labels.shape[0] < min_shape:
-            min_shape = instance_labels.shape[0]
-
-    resized_data = []
-    resized_labels = []
-    for i, datum in enumerate(data):
-        label = labels[i]
-        downsample_indexes = random.sample(
-            np.arange(0, datum.shape[0]).tolist(),
-            min_shape,
-        )
-        datum = datum[downsample_indexes]
-        label = label[downsample_indexes]
-        resized_data.append(datum)
-        resized_labels.append(label)
-
-    resized_data = np.stack(resized_data)
-    resized_labels = np.stack(resized_labels)
-
-    return resized_data, resized_labels
-
-
-def get_final_clusters(preds, DBSCAN_eps=1, DBSCAN_min_samples=10):
+def get_final_clusters(preds, merge_similar_clusters=False, merge_threshold=0.5):
     try:
-        preds = preds.cpu().detach().numpy().squeeze()
-        clustering = DBSCAN(eps=DBSCAN_eps, min_samples=DBSCAN_min_samples).fit(preds)
-        final_clusters = clustering.labels_
-        return final_clusters
+        pred_cluster = preds[0]
+        pred_aff = preds[1].squeeze()
+        pred_samples_idx = preds[2].squeeze()
+        pred_cluster = torch.argmax(pred_cluster, 1).squeeze()
+
+        if not merge_similar_clusters:
+            return pred_cluster.cpu()
+
+        pred_aff = (pred_aff >= merge_threshold).int().squeeze()
+        pred_final_cluster = pred_cluster.cpu()
+
+        for i in range(256):
+            for j, v in enumerate(pred_aff[i]):
+                if v == 1:
+                    pred_final_cluster[
+                        pred_final_cluster == pred_final_cluster[pred_samples_idx[j]]
+                    ] = pred_final_cluster[pred_samples_idx[i]]
+
+        return pred_final_cluster
     except Exception as e:
         print(e)
         return None
 
 
 def run_inference(model, data, label, best_params):
-    data = torch.from_numpy(data).type(torch.DoubleTensor)
-    label = torch.Tensor(label).float().squeeze().cpu()
-    model = model.cpu()
-    model.DGCNN_feature_space.device = "cpu"
-    metric_calculator = LeafMetrics()
-    ap_calculator = AveragePrecision(0.25, "cpu")
+    data = torch.from_numpy(data).type(torch.FloatTensor).cuda()
+    label = torch.Tensor(label).float().squeeze().cuda()
+    model = model.cuda()
+
+    metric_calculator = LeafMetrics("cuda")
+    ap_calculator = AveragePrecision(0.25, "cuda")
 
     best_acc_value = 0
     best_acc_preds = None
@@ -163,7 +129,7 @@ def run_inference(model, data, label, best_params):
         #     break
         preds = model(data[i : i + 1])
         pred_clusters = get_final_clusters(
-            preds, best_params["eps"], best_params["minpoints"]
+            preds, best_params["merge_similar_clusters"], best_params["merge_threshold"]
         )
         if pred_clusters is None:
             continue
@@ -172,7 +138,7 @@ def run_inference(model, data, label, best_params):
         pred_clusters = torch.tensor(pred_clusters)
 
         acc, precison, recal, f1 = metric_calculator(
-            pred_clusters.unsqueeze(0).unsqueeze(-1),
+            pred_clusters.unsqueeze(0).unsqueeze(-1).cuda(),
             label[i].unsqueeze(0).unsqueeze(-1),
         )
 
@@ -214,12 +180,12 @@ def run_inference(model, data, label, best_params):
     }
 
     best_example_ply = create_ply_pcd_from_points_with_labels(
-        data[best_acc_index].squeeze().numpy(),
-        best_acc_preds.squeeze().numpy(),
+        data[best_acc_index].squeeze().cpu().numpy(),
+        best_acc_preds.squeeze().cpu().numpy(),
     )
     worst_example_ply = create_ply_pcd_from_points_with_labels(
-        data[worst_acc_index].squeeze().numpy(),
-        worst_acc_preds.squeeze().numpy(),
+        data[worst_acc_index].squeeze().cpu().numpy(),
+        worst_acc_preds.squeeze().cpu().numpy(),
     )
 
     final_predictions = np.stack(final_predictions, 0)
@@ -253,30 +219,23 @@ def save_results(
 
 def main():
     args = get_args()
-    best_params = get_best_param(args.param)
 
     output_dir = os.path.join(args.output, args.dataset)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    model = load_model("SorghumPartNetInstance", args.model)
+    model = load_model("TreePartNet", args.model)
 
-    if args.dataset == "SPNS":
-        data, label = load_data_h5(args.input, "points", "labels")
-    elif args.dataset == "SPNR":
-        data, label = load_data_directory(args.input)
-    elif args.dataset == "PN":
-        data, label = load_data_h5(args.input, "pts", "label")
-    elif args.dataset == "TPN":
+    if args.dataset == "TPN":
         data, label = load_data_h5(args.input, "points", "primitive_id")
     else:
         print(":: Incorrect dataset name. ")
         return
 
-    print(
-        f":: Starting the inference with the following parameters --> eps: {best_params['eps']} - minpoints: {best_params['minpoints']}"
-    )
+    print(f":: Starting the inference")
     sys.stdout.flush()
+
+    best_params = {"merge_similar_clusters": True, "merge_threshold": 0.5}
 
     (
         full_results_dic,
@@ -299,9 +258,6 @@ main()
 
 """
 Running argument samples for all datasets:
+TPN: nohup python test_set_inference_treepartnet.py -i /space/ariyanzarei/sorghum_segmentation/dataset/TreePartNetData/tree_labeled_test.hdf5 -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/TPN/TreePartNet/lightning_logs/version_0/checkpoints/epoch\=9-step\=8809.ckpt -d TPN -o /space/ariyanzarei/sorghum_segmentation/results/TPN_model_test_set/ &>nohup_test.out&
 
-SPNS: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5/instance_segmentation_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_13/checkpoints/epoch=8-step=43199.ckpt -d SPNS -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json &>nohup_test.out&
-SPNR: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/ply_files/ -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_13/checkpoints/epoch=8-step=43199.ckpt -d SPNR -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json &>nohup_test.out&
-TPN: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/TreePartNetData/tree_labeled_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/TPN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=4409.ckpt -d TPN -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/TPN/DBSCAN_best_param.json &>nohup_test.out&
-PN: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/PartNetData/h5/Bed/test-00.h5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/PN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=169.ckpt -d PN -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/PN/DBSCAN_best_param.json &>nohup_test.out&
 """

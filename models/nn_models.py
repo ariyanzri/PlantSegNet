@@ -849,13 +849,14 @@ class SorghumPartNetInstanceWithLeafBranch(pl.LightningModule):
         return {"val_loss": val_loss, "log": tensorboard_logs}
 
 
-# The code seems to be incorrect. The affinity matrix is never used
-# The fine clustering is never merged. They fine clustering is treated as
+# The fine clustering is never merged. Their fine clustering is treated as
 # the final / coarse clustering (look at the BCE loss between the final labels
 # and the fine clustering predictions). Moreover, using integer labels and BCE
 # inadvertantly enforces a meaning (distance/order) on the labels which is unwanted.
 # The cluster numbers are solely for the sake of knowing which points are in the same
 # Group.
+
+
 class TreePartNet(pl.LightningModule):
     def __init__(self, hparams, debug=False):
         """
@@ -970,7 +971,11 @@ class TreePartNet(pl.LightningModule):
 
         fnode_pred = dot - self.scale * dis
 
-        return lc_pred, fnode_pred
+        # Sampled Points for cluster merging
+        lc_idx = l_s_idx[0]
+        lc_idx = lc_idx[:, 0 : self.hparams["lc_count"]]
+
+        return lc_pred, fnode_pred, lc_idx
 
     def configure_optimizers(self):
         lr_lbmd = lambda _: max(
@@ -1040,7 +1045,7 @@ class TreePartNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         pxyz, lcl, fn = batch
-        pred_lcl, fnode_pred = self(pxyz)
+        pred_lcl, fnode_pred, _ = self(pxyz)
         critirion = torch.nn.CrossEntropyLoss()
         lc_loss = critirion(pred_lcl, lcl)
         critirion2 = FocalLoss(
@@ -1084,7 +1089,7 @@ class TreePartNet(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         pxyz, lcl, fn = batch
-        pred_lcl, fnode_pred = self(pxyz)
+        pred_lcl, fnode_pred, _ = self(pxyz)
         critirion = torch.nn.CrossEntropyLoss()
         lc_loss = critirion(pred_lcl, lcl)
         critirion2 = FocalLoss(

@@ -263,16 +263,20 @@ class AveragePrecision(nn.Module):
                 f"Incorrect shape of the target tensor. It should have 1 dimensions (N) but it has shape {target.shape}. "
             )
 
-        gt_cluster_labels = list(set(target.int().numpy().tolist()))
-        pr_cluster_labels = list(set(input.int().numpy().tolist()))
+        gt_cluster_labels = list(set(target.int().cpu().numpy().tolist()))
+        pr_cluster_labels = list(set(input.int().cpu().numpy().tolist()))
 
         average_precision = 0
         for gt_cluster in gt_cluster_labels:
             TP = 0
             FP = 0
             for pr_cluster in pr_cluster_labels:
-                pr_point_indices = (input == pr_cluster).nonzero().squeeze().numpy()
-                gt_point_indices = (target == gt_cluster).nonzero().squeeze().numpy()
+                pr_point_indices = (
+                    (input == pr_cluster).nonzero().squeeze().cpu().numpy()
+                )
+                gt_point_indices = (
+                    (target == gt_cluster).nonzero().squeeze().cpu().numpy()
+                )
                 intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
                 union = np.union1d(pr_point_indices, gt_point_indices)
                 iou = len(intersection) / len(union)
