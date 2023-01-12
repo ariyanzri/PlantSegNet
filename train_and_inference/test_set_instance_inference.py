@@ -159,8 +159,8 @@ def run_inference(model, data, label, best_params):
     final_predictions = []
 
     for i in range(data.shape[0]):
-        # if i == 10:
-        #     break
+        if i == 100:
+            break
         preds = model(data[i : i + 1])
         pred_clusters = get_final_clusters(
             preds, best_params["eps"], best_params["minpoints"]

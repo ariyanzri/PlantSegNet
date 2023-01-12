@@ -3,6 +3,7 @@ import h5py
 import numpy as np
 import os
 import sys
+import torch
 
 sys.path.append("../..")
 from models.treepartnet_utils import furthest_point_sample
@@ -52,41 +53,70 @@ def furthest_point_sampling(points, n_initial_clusters=256):
     return furthest_point_sample(points, n_initial_clusters)
 
 
-def calculate_initial_clustering():
-    # for each point, find nearest point in furthest samples
-    # and assign the index of that sample as the initial cluster
-    # value
-    pass
+def calculate_initial_clustering(points):
+    points = torch.from_numpy(points).type(torch.DoubleTensor)
+    mins, _ = torch.min(points, axis=0)
+    maxs, _ = torch.max(points, axis=0)
+    mins = mins.unsqueeze(0)
+    maxs = maxs.unsqueeze(0)
+    points = (points - mins) / (maxs - mins) - 0.5
+    points = points.cuda().unsqueeze(0).float()
+    sample_idx = furthest_point_sample(points, 256).long().squeeze()
+    samples = points[:, sample_idx, :]
+    distances = torch.cdist(points, samples)
+    _, nearest_idx = torch.topk(distances, 1, 2, False)
+    initial_clusters = nearest_idx.squeeze().cpu()
+    return (
+        points.squeeze().cpu().numpy(),
+        initial_clusters.numpy(),
+        sample_idx.cpu().numpy(),
+    )
 
 
-def calculate_affinity_matrix():
-    # for each furthest sample point, find its three closest points
-    # with the same branch id among the furthest sample points.
-    # These are considered 1 in the affinity matrix and the rest
-    # will be zero
-    pass
+def calculate_affinity_matrix(points, sample_idx, gt_label):
+    points = torch.from_numpy(points).type(torch.DoubleTensor)
+    gt_label = torch.from_numpy(gt_label).squeeze()
+    sample_idx = torch.from_numpy(sample_idx)
+    samples = points[sample_idx, :]
+    distances = torch.cdist(samples, samples).squeeze()
+    final_distances = distances.cpu()
+    _, nearest_idx = torch.topk(final_distances, 3, 1, False)
+    affinity_matrix = torch.eye(256)
+    ind_new = (torch.arange(0, 256)[:, None], nearest_idx)
+    affinity_matrix[ind_new] = 1
+    sample_labels = gt_label[sample_idx].unsqueeze(0).unsqueeze(-1).float()
+    label_similarity = torch.cdist(sample_labels, sample_labels)
+    label_similarity = (label_similarity == 0).int().squeeze()
+    affinity_matrix = torch.logical_and(label_similarity, affinity_matrix)
+    return affinity_matrix.numpy()
 
 
 def convert_format_single(points, labels):
-    pass
+    new_points, init_clusters, sample_idx = calculate_initial_clustering(points)
+    affinity_matrix = calculate_affinity_matrix(points, sample_idx, labels)
+    return new_points, init_clusters, labels, affinity_matrix, sample_idx
 
 
 def convert_format_all(h5_input_path, h5_output_path):
-    input_data = read_h5_dataset(h5_input_path)
+    data, label = read_h5_dataset(h5_input_path)
     all_points = []
     all_local_clusters = []
     all_cluster_labels = []
     all_affinities = []
     all_local_context_idx = []
 
-    for i in range(input_data["points"].shape[0]):
+    n = data.shape[0]
+
+    for i in range(n):
+        print(f":: Processing point cloud {i+1}/{n}...")
+        sys.stdout.flush()
         (
             points,
             local_clusters,
             cluster_labels,
             affinities,
             local_context_idx,
-        ) = convert_format_single(input_data["points"][i], input_data["labels"][i])
+        ) = convert_format_single(data[i], label[i])
         all_points.append(points)
         all_local_clusters.append(local_clusters)
         all_cluster_labels.append(cluster_labels)
@@ -114,7 +144,7 @@ def main():
     args = get_args()
     list_dataset_files = os.listdir(args.input)
     for dataset_file in list_dataset_files:
-        if ".hdf5" not in dataset_file:
+        if ".hdf5" not in dataset_file or "instance" not in dataset_file:
             continue
         input_dataset_file_path = os.path.join(args.input, dataset_file)
         output_dataset_file_path = os.path.join(args.output, dataset_file)
