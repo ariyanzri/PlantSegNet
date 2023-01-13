@@ -320,7 +320,52 @@ class TreePartNetOriginalDataset(data.Dataset):
         points = torch.from_numpy(points).float()
         primitives = torch.from_numpy(primitives)
         fnodes = torch.from_numpy(fnodes)
+
+        return (points, primitives, fnodes)
+
+    def __len__(self):
+        if self.length != -1:
+            return self.length
+        else:
+            f = h5py.File(self.h5_filename, "r")
+            self.length = len(f["points"])
+            f.close()
+            if self.is_debug:
+                self.length = 50
+            return self.length
+
+
+class SorghumDatasetTPNFormat(data.Dataset):
+    def __init__(
+        self,
+        h5_filename,
+        std_coef=0.015,
+        debug=False,
+    ):
+        super().__init__()
+        self.h5_filename = h5_filename
+        self.length = -1
+        self.std_coef = std_coef
+        self.is_debug = debug
+
+    def __getitem__(self, index):
+        f = h5py.File(self.h5_filename, "r")
+        points = f["points"][index]
+        primitives = f["cluster_labels"][index]
+        fnodes = f["affinities"][index]
         f.close()
+
+        # add noise to all points
+        if self.std_coef > 0:
+            std_points = np.repeat(
+                np.expand_dims(np.std(points, 0), 0), points.shape[0], 0
+            )
+            points += np.random.normal(0, std_points * self.std_coef, size=points.shape)
+
+        # convert to torch
+        points = torch.from_numpy(points).float()
+        primitives = torch.from_numpy(primitives).squeeze()
+        fnodes = torch.from_numpy(fnodes).float()
 
         return (points, primitives, fnodes)
 

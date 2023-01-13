@@ -14,6 +14,7 @@ from models.datasets import (
     TreePartNetDataset,
     TreePartNetOriginalDataset,
     PartNetDataset,
+    SorghumDatasetTPNFormat,
 )
 from models.dgcnn import *
 from models.dgcnn_new import DGCNN_partseg
@@ -1016,20 +1017,18 @@ class TreePartNet(pl.LightningModule):
 
     def _build_dataloader(self, ds_path, shuff=True):
         if self.hparams["dataset"] == "SPN":
-            dataset = SorghumDatasetWithNormals(
+            dataset = SorghumDatasetTPNFormat(
                 ds_path,
-                self.hparams["use_normals"],
                 self.hparams["std_noise"],
                 debug=self.is_debug,
             )
         elif self.hparams["dataset"] == "TPN":
-            # Needs to be updated according to the requirements for the loss
-            # in the training and validation steps
             dataset = TreePartNetOriginalDataset(
                 ds_path,
                 debug=self.is_debug,
             )
         elif self.hparams["dataset"] == "PN":
+            # not working
             dataset = PartNetDataset(
                 ds_path,
                 debug=self.is_debug,

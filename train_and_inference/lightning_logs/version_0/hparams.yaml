@@ -1,0 +1,40 @@
+FL_alpha: 1.31
+FL_gamma: 2
+batch_size: 2
+bn_momentum: 0.5
+bnm_decay: 0.5
+dataset: SPN
+debug: true
+decay_step: 300000.0
+epochs: 10
+gpus: &id001
+- 0
+- 1
+hparams:
+  FL_alpha: 1.31
+  FL_gamma: 2
+  batch_size: 2
+  bn_momentum: 0.5
+  bnm_decay: 0.5
+  dataset: SPN
+  decay_step: 300000.0
+  epochs: 10
+  gpus: *id001
+  input_channels: 0
+  lc_count: 256
+  lr: 0.05
+  lr_decay: 0.5
+  std_noise: 0.01
+  train_data: /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5_tpn/instance_segmentation_train.hdf5
+  use_xyz: true
+  val_data: /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5_tpn/instance_segmentation_validation.hdf5
+  weight_decay: 0.0
+input_channels: 0
+lc_count: 256
+lr: 0.05
+lr_decay: 0.5
+std_noise: 0.01
+train_data: /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5_tpn/instance_segmentation_train.hdf5
+use_xyz: true
+val_data: /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5_tpn/instance_segmentation_validation.hdf5
+weight_decay: 0.0
