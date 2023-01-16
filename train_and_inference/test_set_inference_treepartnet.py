@@ -44,7 +44,7 @@ def get_args():
     parser.add_argument(
         "-d",
         "--dataset",
-        help="The name of the dataset. It can only be TPN at this point. In future, we prepare the SPN dataset for it too.  ",
+        help="The name of the dataset. It can only be TPN or SPNS at this point. ",
         metavar="dataset",
         required=True,
         type=str,
@@ -75,7 +75,7 @@ def load_data_h5(path, point_key, label_key):
     return data, label
 
 
-def get_final_clusters(preds, merge_similar_clusters=False, merge_threshold=0.5):
+def get_final_clusters(preds, merge_similar_clusters=False, merge_threshold=0):
     try:
         pred_cluster = preds[0]
         pred_aff = preds[1].squeeze()
@@ -125,8 +125,8 @@ def run_inference(model, data, label, best_params):
     final_predictions = []
 
     for i in range(data.shape[0]):
-        # if i == 10:
-        #     break
+        if i == 10:
+            break
         preds = model(data[i : i + 1])
         pred_clusters = get_final_clusters(
             preds, best_params["merge_similar_clusters"], best_params["merge_threshold"]
@@ -228,6 +228,8 @@ def main():
 
     if args.dataset == "TPN":
         data, label = load_data_h5(args.input, "points", "primitive_id")
+    elif args.dataset == "SPNS":
+        data, label = load_data_h5(args.input, "points", "cluster_labels")
     else:
         print(":: Incorrect dataset name. ")
         return
@@ -235,7 +237,7 @@ def main():
     print(f":: Starting the inference")
     sys.stdout.flush()
 
-    best_params = {"merge_similar_clusters": True, "merge_threshold": 0.5}
+    best_params = {"merge_similar_clusters": False, "merge_threshold": 0.5}
 
     (
         full_results_dic,
@@ -259,5 +261,5 @@ main()
 """
 Running argument samples for all datasets:
 TPN: nohup python test_set_inference_treepartnet.py -i /space/ariyanzarei/sorghum_segmentation/dataset/TreePartNetData/tree_labeled_test.hdf5 -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/TPN/TreePartNet/lightning_logs/version_0/checkpoints/epoch\=9-step\=8809.ckpt -d TPN -o /space/ariyanzarei/sorghum_segmentation/results/TPN_model_test_set/ &>nohup_test.out&
-
+SPNS: python test_set_inference_treepartnet.py -i /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5_tpn/instance_segmentation_validation.hdf5 -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/SPN/TreePartNet/lightning_logs/version_0/checkpoints/epoch\=8-step\=86399.ckpt -d SPNS -o /space/ariyanzarei/sorghum_segmentation/results/TPN_model_results
 """
