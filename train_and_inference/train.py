@@ -2,8 +2,8 @@ import pytorch_lightning as pl
 import argparse
 import json
 import os
-import sys
 import shutil
+import sys
 
 sys.path.append("..")
 from models.nn_models import *
@@ -15,7 +15,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 def get_args():
     parser = argparse.ArgumentParser(
-        description="SorghumPartNet Instance segmentation training script.",
+        description="Generalized training script for all the experiments and models.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -31,9 +31,10 @@ def get_args():
     parser.add_argument(
         "-o",
         "--output",
-        help="The path to the directory in which the model checkpoints will be saved. ",
+        help="The path to the results directory. Subdirectories for dataset and model will be automatically created under this directory. ",
         metavar="output",
-        required=True,
+        required=False,
+        default="/space/ariyanzarei/sorghum_segmentation/results/training_logs",
         type=str,
     )
 
@@ -63,9 +64,12 @@ def get_hparam(path):
 def train():
     args = get_args()
     hparams = get_hparam(args.hparam)
-    version_name = os.path.basename(os.path.normpath(args.hparam)).replace(".json", "")
+    version_name = hparams["experiment_id"]
+    if args.debug:
+        version_name += "_debug"
 
-    chkpt_path = os.path.join(args.output, "SorghumPartNetInstance")
+    chkpt_path = os.path.join(args.output, hparams["model_name"], hparams["dataset"])
+
     if not os.path.exists(chkpt_path):
         os.makedirs(chkpt_path)
 
@@ -79,7 +83,9 @@ def train():
             return
 
     checkpoint_callback = ModelCheckpoint(
-        save_top_k=1, monitor="val_leaf_loss", mode="min"
+        save_top_k=1,
+        monitor=hparams["early_stopping_metric"],
+        mode=hparams["early_stopping_mode"],
     )
 
     tensorboard_callback = TensorBoardLogger(
@@ -87,30 +93,25 @@ def train():
     )
 
     early_stopping_callback = EarlyStopping(
-        monitor="val_leaf_loss", mode="min", patience=hparams["patience"]
+        monitor=hparams["early_stopping_metric"],
+        mode=hparams["early_stopping_mode"],
+        patience=hparams["early_stopping_patience"],
     )
 
-    if args.debug:
-        trainer = pl.Trainer(
-            accelerator="ddp",
-            gpus=hparams["gpus"],
-            max_epochs=hparams["epochs"],
-            callbacks=[checkpoint_callback, early_stopping_callback],
-            logger=tensorboard_callback,
-        )
-        segmentor = SorghumPartNetInstance(hparams, True).cuda()
-    else:
-        trainer = pl.Trainer(
-            default_root_dir=chkpt_path,
-            accelerator="ddp",
-            gpus=hparams["gpus"],
-            max_epochs=hparams["epochs"],
-            callbacks=[checkpoint_callback, early_stopping_callback],
-            logger=tensorboard_callback,
-        )
-        segmentor = SorghumPartNetInstance(hparams, False).cuda()
+    ModelClass = eval(hparams["model_name"])
 
-    trainer.fit(segmentor, segmentor.train_dataloader(), segmentor.val_dataloader())
+    trainer = pl.Trainer(
+        default_root_dir=chkpt_path,
+        accelerator="ddp",
+        gpus=hparams["gpus"],
+        max_epochs=hparams["epochs"],
+        callbacks=[checkpoint_callback, early_stopping_callback],
+        logger=tensorboard_callback,
+    )
+
+    model = ModelClass(hparams, args.debug).cuda()
+
+    trainer.fit(model, model.train_dataloader(), model.val_dataloader())
 
 
 if __name__ == "__main__":

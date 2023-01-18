@@ -2,12 +2,15 @@ import pytorch_lightning as pl
 import argparse
 import json
 import os
+import shutil
 import sys
 
 sys.path.append("..")
 from models.nn_models import *
 
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 def get_args():
@@ -41,6 +44,13 @@ def get_args():
         action="store_true",
     )
 
+    parser.add_argument(
+        "-f",
+        "--force",
+        help="Whether to forcefully overwrite the experiment if exist or not. ",
+        action="store_true",
+    )
+
     return parser.parse_args()
 
 
@@ -53,6 +63,7 @@ def get_hparam(path):
 def train():
     args = get_args()
     hparams = get_hparam(args.hparam)
+    version_name = os.path.basename(os.path.normpath(args.hparam)).replace(".json", "")
 
     if "dataset" in hparams and (
         hparams["dataset"] == "TPN" or hparams["dataset"] == "PN"
@@ -66,19 +77,36 @@ def train():
     if not os.path.exists(chkpt_path):
         os.makedirs(chkpt_path)
 
+    if os.path.exists(os.path.join(chkpt_path, version_name)):
+        if args.force:
+            shutil.rmtree(os.path.join(chkpt_path, version_name))
+        else:
+            print(
+                ":: There is a folder for this version of experiments. Please use -f to overwrite this experiment."
+            )
+            return
+
     checkpoint_callback = ModelCheckpoint(
-        save_top_k=3,
+        save_top_k=1,
         monitor="val_leaf_loss",
         mode="min",
+    )
+
+    tensorboard_callback = TensorBoardLogger(
+        save_dir=chkpt_path, name="", default_hp_metric=False, version=version_name
+    )
+
+    early_stopping_callback = EarlyStopping(
+        monitor="val_leaf_loss", mode="min", patience=hparams["patience"]
     )
 
     if args.debug:
         trainer = pl.Trainer(
             accelerator="ddp",
             gpus=hparams["gpus"],
-            # gpus=1,
             max_epochs=hparams["epochs"],
-            callbacks=[checkpoint_callback],
+            callbacks=[checkpoint_callback, early_stopping_callback],
+            logger=tensorboard_callback,
         )
         segmentor = SorghumPartNetInstance(hparams, True).cuda()
     else:
@@ -86,9 +114,9 @@ def train():
             default_root_dir=chkpt_path,
             accelerator="ddp",
             gpus=hparams["gpus"],
-            # gpus=1,
             max_epochs=hparams["epochs"],
-            callbacks=[checkpoint_callback],
+            callbacks=[checkpoint_callback, early_stopping_callback],
+            logger=tensorboard_callback,
         )
         segmentor = SorghumPartNetInstance(hparams, False).cuda()
 

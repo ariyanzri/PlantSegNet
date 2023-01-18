@@ -310,6 +310,7 @@ class SorghumPartNetSemantic(pl.LightningModule):
                 .transpose(1, 2)
             )
             X = torchvision.transforms.functional.resize(X, (1000, 1000))
+            fig.close()
             accs.append(acc)
             pred_images.append(X)
 
@@ -632,7 +633,7 @@ class SorghumPartNetInstance(pl.LightningModule):
                 .transpose(1, 2)
             )
             X = torchvision.transforms.functional.resize(X, (1000, 1000))
-
+            fig.close()
             accs.append(acc)
             precisions.append(precison)
             recals.append(recal)
