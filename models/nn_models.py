@@ -430,7 +430,7 @@ class SorghumPartNetInstance(pl.LightningModule):
         if "use_normals" not in self.hparams:
             dataset = SorghumDataset(ds_path)
         else:
-            if "dataset" not in self.hparams or self.hparams["dataset"] == "SPN":
+            if "dataset" not in self.hparams or self.hparams["dataset"] == "SPNS":
                 dataset = SorghumDatasetWithNormals(
                     ds_path,
                     self.hparams["use_normals"],
