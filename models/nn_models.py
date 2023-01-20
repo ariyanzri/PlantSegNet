@@ -1125,3 +1125,129 @@ class TreePartNet(pl.LightningModule):
             )
 
         return tensorboard_logs
+
+    def validation_epoch_end(self, batch):
+        if "real_data" in self.hparams:
+            self.validation_real_data()
+
+    def validation_real_data(self):
+        # to be fixed
+        real_data_path = self.hparams["real_data"]
+
+        device_name = "cpu"
+        device = torch.device(device_name)
+
+        instance_model = self.to(device)
+
+        files = os.listdir(real_data_path)
+        accs = []
+        precisions = []
+        recals = []
+        f1s = []
+        pred_images = []
+
+        for file in files:
+            path = os.path.join(real_data_path, file)
+            main_points, instance_labels, semantic_labels = load_real_ply_with_labels(
+                path
+            )
+            points = main_points[semantic_labels == 1]
+            instance_labels = instance_labels[semantic_labels == 1]
+
+            points = torch.tensor(points, dtype=torch.float64).to(device)
+            if (
+                "use_normals" in instance_model.hparams
+                and instance_model.hparams["use_normals"]
+            ):
+                pred_instance_features = instance_model(
+                    torch.unsqueeze(points, dim=0).to(device)
+                )
+            else:
+                pred_instance_features = instance_model(
+                    torch.unsqueeze(points[:, :3], dim=0).to(device)
+                )
+
+            pred_instance_features = (
+                pred_instance_features.cpu().detach().numpy().squeeze()
+            )
+            clustering = DBSCAN(eps=1, min_samples=10).fit(pred_instance_features)
+            pred_final_cluster = clustering.labels_
+
+            d_colors = distinct_colors(len(list(set(pred_final_cluster))))
+            colors = np.zeros((pred_final_cluster.shape[0], 3))
+            for i, l in enumerate(list(set(pred_final_cluster))):
+                colors[pred_final_cluster == l, :] = d_colors[i]
+
+            non_focal_points = main_points[semantic_labels == 2]
+            ground_points = main_points[semantic_labels == 0]
+
+            non_focal_color = [0, 0, 0.7, 0.3]
+            ground_color = [0.3, 0.1, 0, 0.3]
+
+            metric_calculator = LeafMetrics()
+            acc, precison, recal, f1 = metric_calculator(
+                torch.tensor(pred_final_cluster).unsqueeze(0).unsqueeze(-1),
+                torch.tensor(instance_labels).unsqueeze(0).unsqueeze(-1),
+            )
+
+            fig = plt.figure(figsize=(15, 15))
+            ax = fig.add_subplot(projection="3d")
+            ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=4, c=colors)
+            ax.scatter(
+                non_focal_points[:, 0],
+                non_focal_points[:, 1],
+                non_focal_points[:, 2],
+                s=1,
+                color=non_focal_color,
+            )
+            ax.scatter(
+                ground_points[:, 0],
+                ground_points[:, 1],
+                ground_points[:, 2],
+                s=1,
+                color=ground_color,
+            )
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.set_zlabel("z")
+            ax.set_title(
+                f"acc: {acc*100:.2f} - precision: {precison:.2f} - recall: {recal:.2f} - f1: {f1:.2f}"
+            )
+            fig.canvas.draw()
+            X = (
+                torch.tensor(np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3])
+                .transpose(0, 2)
+                .transpose(1, 2)
+            )
+            X = torchvision.transforms.functional.resize(X, (1000, 1000))
+            plt.close(fig)
+            accs.append(acc)
+            precisions.append(precison)
+            recals.append(recal)
+            f1s.append(f1)
+            pred_images.append(X)
+
+        accs = torch.tensor(accs)
+        precisions = torch.tensor(precisions)
+        recals = torch.tensor(recals)
+        f1s = torch.tensor(f1s)
+
+        tensorboard_logs = {
+            "test_real_acc": torch.mean(accs),
+            "test_real_precision": torch.mean(precisions),
+            "test_real_recal": torch.mean(recals),
+            "test_real_f1": torch.mean(f1s),
+        }
+
+        grid = torch.cat(pred_images, 1)
+        self.logger.experiment.add_image(
+            "pred_real_data", grid, self.trainer.current_epoch
+        )
+
+        for key in tensorboard_logs:
+            self.logger.experiment.add_scalar(
+                key, tensorboard_logs[key], self.trainer.current_epoch
+            )
+
+        instance_model = self.to(torch.device("cuda"))
+        instance_model.DGCNN_feature_space.device = "cuda"
