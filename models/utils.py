@@ -290,6 +290,63 @@ class AveragePrecision(nn.Module):
         return average_precision / len(gt_cluster_labels)
 
 
+class ClusterBasedMetrics(nn.Module):
+    def __init__(self, threshold, device_name="cpu"):
+        super().__init__()
+        self.iou_threshold = threshold
+        self.device_name = device_name
+
+    def forward(self, input, target):
+
+        if len(input.shape) != 1:
+            raise Exception(
+                f"Incorrect shape of the input tensor. It should have 1 dimensions (N) but it has shape {input.shape}. "
+            )
+
+        if len(target.shape) != 1:
+            raise Exception(
+                f"Incorrect shape of the target tensor. It should have 1 dimensions (N) but it has shape {target.shape}. "
+            )
+
+        gt_cluster_labels = list(set(target.int().cpu().numpy().tolist()))
+        pr_cluster_labels = list(set(input.int().cpu().numpy().tolist()))
+
+        TP = 0
+        sum_coverage = 0
+
+        for gt_cluster in gt_cluster_labels:
+            max_iou_gt = -1
+            for pr_cluster in pr_cluster_labels:
+                pr_point_indices = (
+                    (input == pr_cluster).nonzero().squeeze().cpu().numpy()
+                )
+                gt_point_indices = (
+                    (target == gt_cluster).nonzero().squeeze().cpu().numpy()
+                )
+                intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
+                union = np.union1d(pr_point_indices, gt_point_indices)
+                iou = len(intersection) / len(union)
+                if iou > max_iou_gt:
+                    max_iou_gt = iou
+
+            sum_coverage += max_iou_gt
+
+            if max_iou_gt >= self.iou_threshold:
+                TP += 1
+
+        mean_coverage = sum_coverage / len(gt_cluster_labels)
+        precision = TP / len(pr_cluster_labels)
+        recall = TP / len(gt_cluster_labels)
+
+        result = {
+            "mean_coverage": mean_coverage,
+            "precision": precision,
+            "recall": recall,
+        }
+
+        return result
+
+
 def binary_acc(out, target):
     return (torch.softmax(out, dim=1).argmax(dim=1) == target).sum().float() / float(
         target.size(0)

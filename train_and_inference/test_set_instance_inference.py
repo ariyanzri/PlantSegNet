@@ -11,7 +11,7 @@ import sys
 sys.path.append("..")
 from data.load_raw_data import load_real_ply_with_labels
 from models.nn_models import SorghumPartNetInstance
-from models.utils import LeafMetrics, AveragePrecision
+from models.utils import LeafMetrics, ClusterBasedMetrics
 from data.utils import create_ply_pcd_from_points_with_labels
 
 from sklearn.cluster import DBSCAN
@@ -140,8 +140,8 @@ def run_inference(model, data, label, best_params):
     label = torch.Tensor(label).float().squeeze().cpu()
     model = model.cpu()
     model.DGCNN_feature_space.device = "cpu"
-    metric_calculator = LeafMetrics()
-    ap_calculator = AveragePrecision(0.25, "cpu")
+    pointwise_metric_calculator = LeafMetrics()
+    clusterbased_metric_calculator = ClusterBasedMetrics(0.5, "cpu")
 
     best_acc_value = 0
     best_acc_preds = None
@@ -152,14 +152,16 @@ def run_inference(model, data, label, best_params):
 
     pointwise_accuracies = []
     pointwise_precisions = []
-    pointwise_recals = []
+    pointwise_recalls = []
     pointwise_f1s = []
-    aps = []
+    clusterbased_mean_coverages = []
+    clusterbased_precisions = []
+    clusterbased_recalls = []
 
     final_predictions = []
 
     for i in range(data.shape[0]):
-        if i == 100:
+        if i == 10:
             break
         preds = model(data[i : i + 1])
         pred_clusters = get_final_clusters(
@@ -171,14 +173,14 @@ def run_inference(model, data, label, best_params):
         final_predictions.append(pred_clusters)
         pred_clusters = torch.tensor(pred_clusters)
 
-        acc, precison, recal, f1 = metric_calculator(
+        acc, precison, recall, f1 = pointwise_metric_calculator(
             pred_clusters.unsqueeze(0).unsqueeze(-1),
             label[i].unsqueeze(0).unsqueeze(-1),
         )
 
         pointwise_accuracies.append(acc)
         pointwise_precisions.append(precison)
-        pointwise_recals.append(recal)
+        pointwise_recalls.append(recall)
         pointwise_f1s.append(f1)
 
         if acc > best_acc_value:
@@ -191,26 +193,38 @@ def run_inference(model, data, label, best_params):
             worst_acc_index = i
             worst_acc_preds = pred_clusters
 
-        ap = ap_calculator(pred_clusters.squeeze(), label[i].squeeze())
-        aps.append(ap)
+        clusterbased_metrics = clusterbased_metric_calculator(
+            pred_clusters.squeeze(), label[i].squeeze()
+        )
 
-        print(f":: Instance {i}/{data.shape[0]}= Accuracy: {acc} - AP: {ap}")
+        clusterbased_mean_coverages.append(clusterbased_metrics["mean_coverage"])
+        clusterbased_precisions.append(clusterbased_metrics["precision"])
+        clusterbased_recalls.append(clusterbased_metrics["recall"])
+
+        print(
+            f":: Instance {i}/{data.shape[0]}= Accuracy: {acc} - mCov: {clusterbased_metrics['mean_coverage']} - Precision: {clusterbased_metrics['precision']} - Recall: {clusterbased_metrics['recall']}"
+        )
+
         sys.stdout.flush()
 
     full_results_dic = {
         "pointwise_accuracies": pointwise_accuracies,
         "pointwise_precisions": pointwise_precisions,
-        "pointwise_recals": pointwise_recals,
+        "pointwise_recalls": pointwise_recalls,
         "pointwise_f1s": pointwise_f1s,
-        "average_precisions": aps,
+        "clusterbased_mean_coverages": clusterbased_mean_coverages,
+        "clusterbased_precisions": clusterbased_precisions,
+        "clusterbased_recalls": clusterbased_recalls,
     }
 
     mean_results_dic = {
         "pointwise_accuracy": np.mean(pointwise_accuracies),
         "pointwise_precision": np.mean(pointwise_precisions),
-        "pointwise_recal": np.mean(pointwise_recals),
+        "pointwise_recall": np.mean(pointwise_recalls),
         "pointwise_f1": np.mean(pointwise_f1s),
-        "average_precision": np.mean(aps),
+        "clusterbased_mean_coverage": np.mean(clusterbased_mean_coverages),
+        "clusterbased_precision": np.mean(clusterbased_precisions),
+        "clusterbased_recall": np.mean(clusterbased_recalls),
     }
 
     best_example_ply = create_ply_pcd_from_points_with_labels(
@@ -300,8 +314,5 @@ main()
 """
 Running argument samples for all datasets:
 
-SPNS: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/synthetic/2022-12-26/h5/instance_segmentation_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_13/checkpoints/epoch=8-step=43199.ckpt -d SPNS -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json &>nohup_test.out&
-SPNR: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/real_data/labeled/ply_files/ -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/model_checkpoints/SorghumPartNetInstance/lightning_logs/version_13/checkpoints/epoch=8-step=43199.ckpt -d SPNR -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json &>nohup_test.out&
-TPN: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/TreePartNetData/tree_labeled_test.hdf5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/TPN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=4409.ckpt -d TPN -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/TPN/DBSCAN_best_param.json &>nohup_test.out&
-PN: nohup python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/PartNetData/h5/Bed/test-00.h5 -o /space/ariyanzarei/sorghum_segmentation/results/test_set -m /space/ariyanzarei/sorghum_segmentation/models/other_datasets_model_checkpoints/PN/SorghumPartNetInstance/lightning_logs/version_0/checkpoints/epoch\=9-step\=169.ckpt -d PN -p /space/ariyanzarei/sorghum_segmentation/results/hyperparameter_tuning/PN/DBSCAN_best_param.json &>nohup_test.out&
+SPNS: python test_set_instance_inference.py -i /space/ariyanzarei/sorghum_segmentation/dataset/SPNS/SorghumPartNetFormat/instance_segmentation_test.hdf5 -m /space/ariyanzarei/sorghum_segmentation/results/training_logs/SorghumPartNetInstance/SPNS/EXP_02/checkpoints/epoch\=8-step\=43199.ckpt -d SPNS -o /space/ariyanzarei/sorghum_segmentation/results/testing/ -p /space/ariyanzarei/sorghum_segmentation/archive/results/hyperparameter_tuning/SPNS/DBSCAN_best_param.json
 """
