@@ -245,11 +245,40 @@ class SemanticMetrics(nn.Module):
         return Acc.item()
 
 
-class AveragePrecision(nn.Module):
+class ClusterBasedMetrics(nn.Module):
     def __init__(self, iou_th, device_name="cpu"):
         super().__init__()
         self.device_name = device_name
-        self.iou_threshold = iou_th
+        self.thresholds = iou_th
+
+    def get_ious_and_counts(self, pred_clusters, gt_clusters):
+        gt_all_cluster_labels = list(set(gt_clusters.int().cpu().numpy().tolist()))
+        pr_all_cluster_labels = list(set(pred_clusters.int().cpu().numpy().tolist()))
+
+        ious = []
+        max_ious = []
+        for gt_cluster in gt_all_cluster_labels:
+            max_iou = -1
+            for pr_cluster in pr_all_cluster_labels:
+                pr_point_indices = (
+                    (pred_clusters == pr_cluster).nonzero().squeeze().cpu().numpy()
+                )
+                gt_point_indices = (
+                    (gt_clusters == gt_cluster).nonzero().squeeze().cpu().numpy()
+                )
+                intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
+                union = np.union1d(pr_point_indices, gt_point_indices)
+                iou = len(intersection) / len(union)
+                ious.append(iou)
+                if iou > max_iou:
+                    max_iou = iou
+            max_ious.append(max_iou)
+        return (
+            np.array(ious),
+            np.array(max_ious),
+            len(gt_all_cluster_labels),
+            len(pr_all_cluster_labels),
+        )
 
     def forward(self, input, target):
 
@@ -263,88 +292,81 @@ class AveragePrecision(nn.Module):
                 f"Incorrect shape of the target tensor. It should have 1 dimensions (N) but it has shape {target.shape}. "
             )
 
-        gt_cluster_labels = list(set(target.int().cpu().numpy().tolist()))
-        pr_cluster_labels = list(set(input.int().cpu().numpy().tolist()))
+        ious, max_ious, count_gt, count_pred = self.get_ious_and_counts(input, target)
+        precisions = []
+        recalls = []
 
-        average_precision = 0
-        for gt_cluster in gt_cluster_labels:
-            TP = 0
-            FP = 0
-            for pr_cluster in pr_cluster_labels:
-                pr_point_indices = (
-                    (input == pr_cluster).nonzero().squeeze().cpu().numpy()
-                )
-                gt_point_indices = (
-                    (target == gt_cluster).nonzero().squeeze().cpu().numpy()
-                )
-                intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
-                union = np.union1d(pr_point_indices, gt_point_indices)
-                iou = len(intersection) / len(union)
-                if iou >= self.iou_threshold:
-                    TP += 1
-                elif iou > 0:
-                    FP += 1
-            precision = TP / (TP + FP)
-            average_precision += precision
-
-        return average_precision / len(gt_cluster_labels)
-
-
-class ClusterBasedMetrics(nn.Module):
-    def __init__(self, threshold, device_name="cpu"):
-        super().__init__()
-        self.iou_threshold = threshold
-        self.device_name = device_name
-
-    def forward(self, input, target):
-
-        if len(input.shape) != 1:
-            raise Exception(
-                f"Incorrect shape of the input tensor. It should have 1 dimensions (N) but it has shape {input.shape}. "
-            )
-
-        if len(target.shape) != 1:
-            raise Exception(
-                f"Incorrect shape of the target tensor. It should have 1 dimensions (N) but it has shape {target.shape}. "
-            )
-
-        gt_cluster_labels = list(set(target.int().cpu().numpy().tolist()))
-        pr_cluster_labels = list(set(input.int().cpu().numpy().tolist()))
-
-        TP = 0
-        sum_coverage = 0
-
-        for gt_cluster in gt_cluster_labels:
-            max_iou_gt = -1
-            for pr_cluster in pr_cluster_labels:
-                pr_point_indices = (
-                    (input == pr_cluster).nonzero().squeeze().cpu().numpy()
-                )
-                gt_point_indices = (
-                    (target == gt_cluster).nonzero().squeeze().cpu().numpy()
-                )
-                intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
-                union = np.union1d(pr_point_indices, gt_point_indices)
-                iou = len(intersection) / len(union)
-                if iou > max_iou_gt:
-                    max_iou_gt = iou
-
-            sum_coverage += max_iou_gt
-
-            if max_iou_gt >= self.iou_threshold:
-                TP += 1
-
-        mean_coverage = sum_coverage / len(gt_cluster_labels)
-        precision = TP / len(pr_cluster_labels)
-        recall = TP / len(gt_cluster_labels)
+        for t in self.thresholds:
+            TP = len(ious[ious > t])
+            precision = TP / count_pred
+            recall = TP / count_gt
+            precisions.append(precision)
+            recalls.append(recall)
 
         result = {
-            "mean_coverage": mean_coverage,
-            "precision": precision,
-            "recall": recall,
+            "mean_coverage": np.mean(max_ious),
+            "average_precision": np.mean(precisions),
+            "average_recall": np.mean(recalls),
         }
 
         return result
+
+
+# class ClusterBasedMetrics(nn.Module):
+#     def __init__(self, threshold, device_name="cpu"):
+#         super().__init__()
+#         self.iou_threshold = threshold
+#         self.device_name = device_name
+
+#     def forward(self, input, target):
+
+#         if len(input.shape) != 1:
+#             raise Exception(
+#                 f"Incorrect shape of the input tensor. It should have 1 dimensions (N) but it has shape {input.shape}. "
+#             )
+
+#         if len(target.shape) != 1:
+#             raise Exception(
+#                 f"Incorrect shape of the target tensor. It should have 1 dimensions (N) but it has shape {target.shape}. "
+#             )
+
+#         gt_cluster_labels = list(set(target.int().cpu().numpy().tolist()))
+#         pr_cluster_labels = list(set(input.int().cpu().numpy().tolist()))
+
+#         TP = 0
+#         sum_coverage = 0
+
+#         for gt_cluster in gt_cluster_labels:
+#             max_iou_gt = -1
+#             for pr_cluster in pr_cluster_labels:
+#                 pr_point_indices = (
+#                     (input == pr_cluster).nonzero().squeeze().cpu().numpy()
+#                 )
+#                 gt_point_indices = (
+#                     (target == gt_cluster).nonzero().squeeze().cpu().numpy()
+#                 )
+#                 intersection = np.intersect1d(pr_point_indices, gt_point_indices, True)
+#                 union = np.union1d(pr_point_indices, gt_point_indices)
+#                 iou = len(intersection) / len(union)
+#                 if iou > max_iou_gt:
+#                     max_iou_gt = iou
+
+#             sum_coverage += max_iou_gt
+
+#             if max_iou_gt >= self.iou_threshold:
+#                 TP += 1
+
+#         mean_coverage = sum_coverage / len(gt_cluster_labels)
+#         precision = TP / len(pr_cluster_labels)
+#         recall = TP / len(gt_cluster_labels)
+
+#         result = {
+#             "mean_coverage": mean_coverage,
+#             "precision": precision,
+#             "recall": recall,
+#         }
+
+#         return result
 
 
 def binary_acc(out, target):

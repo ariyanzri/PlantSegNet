@@ -141,7 +141,7 @@ def run_inference(model, data, label, best_params):
     model = model.cpu()
     model.DGCNN_feature_space.device = "cpu"
     pointwise_metric_calculator = LeafMetrics()
-    clusterbased_metric_calculator = ClusterBasedMetrics(0.5, "cpu")
+    clusterbased_metric_calculator = ClusterBasedMetrics([0.25, 0.5, 0.75], "cpu")
 
     best_acc_value = 0
     best_acc_preds = None
@@ -155,8 +155,8 @@ def run_inference(model, data, label, best_params):
     pointwise_recalls = []
     pointwise_f1s = []
     clusterbased_mean_coverages = []
-    clusterbased_precisions = []
-    clusterbased_recalls = []
+    clusterbased_average_precisions = []
+    clusterbased_average_recalls = []
 
     final_predictions = []
 
@@ -198,11 +198,13 @@ def run_inference(model, data, label, best_params):
         )
 
         clusterbased_mean_coverages.append(clusterbased_metrics["mean_coverage"])
-        clusterbased_precisions.append(clusterbased_metrics["precision"])
-        clusterbased_recalls.append(clusterbased_metrics["recall"])
+        clusterbased_average_precisions.append(
+            clusterbased_metrics["average_precision"]
+        )
+        clusterbased_average_recalls.append(clusterbased_metrics["average_recall"])
 
         print(
-            f":: Instance {i}/{data.shape[0]}= Accuracy: {acc} - mCov: {clusterbased_metrics['mean_coverage']} - Precision: {clusterbased_metrics['precision']} - Recall: {clusterbased_metrics['recall']}"
+            f":: Instance {i}/{data.shape[0]}= Accuracy: {acc} - mCov: {clusterbased_metrics['mean_coverage']} - Average Precision: {clusterbased_metrics['average_precision']} - Average Recall: {clusterbased_metrics['average_recall']}"
         )
 
         sys.stdout.flush()
@@ -213,8 +215,8 @@ def run_inference(model, data, label, best_params):
         "pointwise_recalls": pointwise_recalls,
         "pointwise_f1s": pointwise_f1s,
         "clusterbased_mean_coverages": clusterbased_mean_coverages,
-        "clusterbased_precisions": clusterbased_precisions,
-        "clusterbased_recalls": clusterbased_recalls,
+        "clusterbased_average_precisions": clusterbased_average_precisions,
+        "clusterbased_average_recalls": clusterbased_average_recalls,
     }
 
     mean_results_dic = {
@@ -223,8 +225,8 @@ def run_inference(model, data, label, best_params):
         "pointwise_recall": np.mean(pointwise_recalls),
         "pointwise_f1": np.mean(pointwise_f1s),
         "clusterbased_mean_coverage": np.mean(clusterbased_mean_coverages),
-        "clusterbased_precision": np.mean(clusterbased_precisions),
-        "clusterbased_recall": np.mean(clusterbased_recalls),
+        "clusterbased_average_precision": np.mean(clusterbased_average_precisions),
+        "clusterbased_average_recall": np.mean(clusterbased_average_recalls),
     }
 
     best_example_ply = create_ply_pcd_from_points_with_labels(
