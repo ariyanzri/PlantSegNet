@@ -851,14 +851,6 @@ class SorghumPartNetInstanceWithLeafBranch(pl.LightningModule):
         return {"val_loss": val_loss, "log": tensorboard_logs}
 
 
-# The fine clustering is never merged. Their fine clustering is treated as
-# the final / coarse clustering (look at the BCE loss between the final labels
-# and the fine clustering predictions). Moreover, using integer labels and BCE
-# inadvertantly enforces a meaning (distance/order) on the labels which is unwanted.
-# The cluster numbers are solely for the sake of knowing which points are in the same
-# Group.
-
-
 class TreePartNet(pl.LightningModule):
     def __init__(self, hparams, debug=False):
         """
