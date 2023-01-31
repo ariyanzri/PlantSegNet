@@ -594,3 +594,29 @@ class FocalLoss(nn.Module):
             return torch.sum(Focal_Loss)
         else:
             return torch.mean(Focal_Loss)
+
+
+def get_final_clusters(preds, merge_similar_clusters=False, merge_threshold=0):
+    try:
+        pred_cluster = preds[0]
+        pred_aff = preds[1].squeeze()
+        pred_samples_idx = preds[2].squeeze()
+        pred_cluster = torch.argmax(pred_cluster, 1).squeeze()
+
+        if not merge_similar_clusters:
+            return pred_cluster.cpu()
+
+        pred_aff = (pred_aff >= merge_threshold).int().squeeze()
+        pred_final_cluster = pred_cluster.cpu()
+
+        for i in range(256):
+            for j, v in enumerate(pred_aff[i]):
+                if v == 1:
+                    pred_final_cluster[
+                        pred_final_cluster == pred_final_cluster[pred_samples_idx[j]]
+                    ] = pred_final_cluster[pred_samples_idx[i]]
+
+        return pred_final_cluster
+    except Exception as e:
+        print(e)
+        return None

@@ -41,6 +41,7 @@ import matplotlib.pyplot as plt
 import torchvision
 from sklearn.cluster import DBSCAN
 from data.utils import distinct_colors
+from models.treepartnet_utils import get_final_clusters
 
 
 class SorghumPartNetSemantic(pl.LightningModule):
@@ -1009,7 +1010,7 @@ class TreePartNet(pl.LightningModule):
         return [optimizer], [lr_scheduler, bnm_scheduler]
 
     def _build_dataloader(self, ds_path, shuff=True):
-        if self.hparams["dataset"] == "SPN":
+        if self.hparams["dataset"] == "SPNS":
             dataset = SorghumDatasetTPNFormat(
                 ds_path,
                 self.hparams["std_noise"],
@@ -1123,13 +1124,12 @@ class TreePartNet(pl.LightningModule):
             self.validation_real_data()
 
     def validation_real_data(self):
-        # to be fixed
         real_data_path = self.hparams["real_data"]
 
-        device_name = "cpu"
+        device_name = "cuda"
         device = torch.device(device_name)
 
-        instance_model = self.to(device)
+        treepartnet_model = self.to(device)
 
         files = os.listdir(real_data_path)
         accs = []
@@ -1143,31 +1143,30 @@ class TreePartNet(pl.LightningModule):
             main_points, instance_labels, semantic_labels = load_real_ply_with_labels(
                 path
             )
+
+            # points = torch.tensor(points, dtype=torch.float32).to(device)
+
+            main_points = torch.from_numpy(main_points).type(torch.DoubleTensor)
+            mins, _ = torch.min(main_points, axis=0)
+            maxs, _ = torch.max(main_points, axis=0)
+            mins = mins.unsqueeze(0)
+            maxs = maxs.unsqueeze(0)
+            main_points = (main_points - mins) / (maxs - mins) - 0.5
+
             points = main_points[semantic_labels == 1]
             instance_labels = instance_labels[semantic_labels == 1]
 
-            points = torch.tensor(points, dtype=torch.float64).to(device)
-            if (
-                "use_normals" in instance_model.hparams
-                and instance_model.hparams["use_normals"]
-            ):
-                pred_instance_features = instance_model(
-                    torch.unsqueeze(points, dim=0).to(device)
-                )
-            else:
-                pred_instance_features = instance_model(
-                    torch.unsqueeze(points[:, :3], dim=0).to(device)
-                )
-
-            pred_instance_features = (
-                pred_instance_features.cpu().detach().numpy().squeeze()
+            pred_instance_features = treepartnet_model(
+                torch.unsqueeze(points, dim=0).to(device).float()
             )
-            clustering = DBSCAN(eps=1, min_samples=10).fit(pred_instance_features)
-            pred_final_cluster = clustering.labels_
 
-            d_colors = distinct_colors(len(list(set(pred_final_cluster))))
+            pred_final_cluster = get_final_clusters(pred_instance_features, False)
+
+            unique_clusters = list(set(pred_final_cluster.cpu().numpy().tolist()))
+            d_colors = distinct_colors(len(unique_clusters))
+
             colors = np.zeros((pred_final_cluster.shape[0], 3))
-            for i, l in enumerate(list(set(pred_final_cluster))):
+            for i, l in enumerate(unique_clusters):
                 colors[pred_final_cluster == l, :] = d_colors[i]
 
             non_focal_points = main_points[semantic_labels == 2]
@@ -1181,6 +1180,8 @@ class TreePartNet(pl.LightningModule):
                 torch.tensor(pred_final_cluster).unsqueeze(0).unsqueeze(-1),
                 torch.tensor(instance_labels).unsqueeze(0).unsqueeze(-1),
             )
+
+            points = points.cpu().numpy()
 
             fig = plt.figure(figsize=(15, 15))
             ax = fig.add_subplot(projection="3d")
@@ -1241,5 +1242,4 @@ class TreePartNet(pl.LightningModule):
                 key, tensorboard_logs[key], self.trainer.current_epoch
             )
 
-        instance_model = self.to(torch.device("cuda"))
-        instance_model.DGCNN_feature_space.device = "cuda"
+        treepartnet_model = self.to(torch.device("cuda"))
