@@ -5,12 +5,13 @@ import numpy as np
 import json
 import torch
 import random
+import glob
 import sys
 
 sys.path.append("..")
 from data.load_raw_data import load_real_ply_with_labels
 from models.nn_models import SorghumPartNetInstance
-from models.utils import LeafMetrics, AveragePrecision
+from models.utils import LeafMetrics, ClusterBasedMetrics
 from data.utils import create_ply_pcd_from_points_with_labels
 
 from sklearn.cluster import DBSCAN
@@ -31,6 +32,26 @@ def get_args():
         metavar="parameters",
         required=True,
         type=str,
+    )
+
+    parser.add_argument(
+        "-s",
+        "--samples",
+        help="Total number of samples to be drawn for hyperparameter tuning. ",
+        metavar="samples",
+        required=False,
+        type=int,
+        default=50,
+    )
+
+    parser.add_argument(
+        "-i",
+        "--iterations",
+        help="Total number of iterations for the optimization. ",
+        metavar="iterations",
+        required=False,
+        type=int,
+        default=100,
     )
 
     return parser.parse_args()
@@ -72,19 +93,25 @@ def get_preds(model, data, batch_size=4):
 
 def run_inference(predictions, label, DBSCAN_eps, DBSCAN_minpoints, device="cpu"):
     metric_calculator = LeafMetrics()
-    ap_calculator = AveragePrecision(0.25, device)
+    clusterbased_metric_calculator = ClusterBasedMetrics([0.25, 0.5, 0.75], device)
 
     pointwise_accuracies = []
     pointwise_precisions = []
     pointwise_recals = []
     pointwise_f1s = []
-    aps = []
+    clusterbased_mean_coverages = []
+    clusterbased_average_precisions = []
+    clusterbased_average_recalls = []
 
     for i in range(predictions.shape[0]):
         preds = predictions[i : i + 1]
-        pred_clusters = torch.tensor(
-            get_final_clusters(preds, DBSCAN_eps, DBSCAN_minpoints)
-        )
+
+        try:
+            pred_clusters = torch.tensor(
+                get_final_clusters(preds, DBSCAN_eps, DBSCAN_minpoints)
+            )
+        except:
+            continue
 
         acc, precison, recal, f1 = metric_calculator(
             pred_clusters.unsqueeze(0).unsqueeze(-1),
@@ -96,15 +123,23 @@ def run_inference(predictions, label, DBSCAN_eps, DBSCAN_minpoints, device="cpu"
         pointwise_recals.append(recal)
         pointwise_f1s.append(f1)
 
-        ap = ap_calculator(pred_clusters.squeeze(), label[i].squeeze())
-        aps.append(ap)
+        clusterbased_metrics = clusterbased_metric_calculator(
+            pred_clusters.squeeze(), label[i].squeeze()
+        )
+        clusterbased_mean_coverages.append(clusterbased_metrics["mean_coverage"])
+        clusterbased_average_precisions.append(
+            clusterbased_metrics["average_precision"]
+        )
+        clusterbased_average_recalls.append(clusterbased_metrics["average_recall"])
 
     mean_results_dic = {
         "pointwise_accuracy": np.mean(pointwise_accuracies),
         "pointwise_precision": np.mean(pointwise_precisions),
         "pointwise_recal": np.mean(pointwise_recals),
         "pointwise_f1": np.mean(pointwise_f1s),
-        "average_precision": np.mean(aps),
+        "clusterbased_mean_coverages": np.mean(clusterbased_mean_coverages),
+        "clusterbased_average_precisions": np.mean(clusterbased_average_precisions),
+        "clusterbased_average_recalls": np.mean(clusterbased_average_recalls),
     }
 
     return mean_results_dic
@@ -131,27 +166,41 @@ def load_params_dict(path):
 
 def main():
     args = get_args()
-    params_dict = load_params_dict(args.parameters)
+    train_param_dict = load_params_dict(args.parameters)
 
-    output_dir = os.path.join(params_dict["output_path"], params_dict["dataset"])
+    output_base_path = os.path.join(
+        "/space/ariyanzarei/sorghum_segmentation/results/training_logs",
+        train_param_dict["model_name"],
+        train_param_dict["dataset"],
+    )
+
+    output_dir = os.path.join(output_base_path, "HyperTuning")
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    model = load_model("SorghumPartNetInstance", params_dict["model_path"])
+    all_checkpoint_path = os.path.join(
+        output_base_path, train_param_dict["experiment_id"], "checkpoints"
+    )
+    all_checkpoints = os.listdir(all_checkpoint_path)
+    if len(all_checkpoints) != 1:
+        print(":: Error reading the model checkpoint.")
+        return
+    best_checkpoint_path = os.path.join(all_checkpoint_path, all_checkpoints[0])
+    model = load_model(train_param_dict["model_name"], best_checkpoint_path)
 
-    if params_dict["dataset"] == "SPNS":
-        data, label = load_data_h5(params_dict["input_path"], "points", "labels")
-    elif params_dict["dataset"] == "PN":
-        data, label = load_data_h5(params_dict["input_path"], "pts", "label")
-    elif params_dict["dataset"] == "TPN":
-        data, label = load_data_h5(params_dict["input_path"], "points", "primitive_id")
+    if train_param_dict["dataset"] == "SPNS":
+        data, label = load_data_h5(train_param_dict["val_data"], "points", "labels")
+    elif train_param_dict["dataset"] == "TPN":
+        data, label = load_data_h5(
+            train_param_dict["val_data"], "points", "primitive_id"
+        )
     else:
         print(":: Incorrect dataset name. ")
         return
 
     sample_indices = random.sample(
         np.arange(0, data.shape[0]).tolist(),
-        min(params_dict["sample_size"], data.shape[0]),
+        min(args.samples, data.shape[0]),
     )
 
     data = data[sample_indices]
@@ -168,13 +217,13 @@ def main():
     bestParams = fmin(
         fn=objective_function,
         space=[
-            hp.uniform("eps", 0.05, 3),
+            hp.uniform("eps", 0.05, 4),
             scope.int(hp.quniform("minpoints", 3, 15, q=1)),
             predictions,
             label,
         ],
         algo=tpe.suggest,
-        max_evals=params_dict["num_iterations"],
+        max_evals=args.iterations,
         trials=trials,
     )
 

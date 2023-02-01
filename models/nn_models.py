@@ -42,6 +42,7 @@ import torchvision
 from sklearn.cluster import DBSCAN
 from data.utils import distinct_colors
 from models.treepartnet_utils import get_final_clusters
+from models.modules import KNNSpaceMean
 
 
 class SorghumPartNetSemantic(pl.LightningModule):
@@ -361,6 +362,11 @@ class SorghumPartNetInstance(pl.LightningModule):
             args, (3 if "input_dim" not in self.hparams else self.hparams["input_dim"])
         ).double()
 
+        # if "knn_space_mean" in self.hparams and self.hparams["knn_space_mean"]:
+        #     self.KNN_space_mean_module = KNNSpaceMean(self.hparams["max_k"])
+        # else:
+        #     self.KNN_space_mean_module = None
+
         self.save_hyperparameters()
 
     def forward(self, xyz):
@@ -387,6 +393,10 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         # Instance
         dgcnn_features = self.DGCNN_feature_space(xyz)
+
+        # # Take mean of the k nearest neighbors
+        # if self.KNN_space_mean_module is not None:
+        #     dgcnn_features = self.KNN_space_mean_module(xyz, dgcnn_features)
 
         return dgcnn_features
 
@@ -1146,7 +1156,7 @@ class TreePartNet(pl.LightningModule):
 
             # points = torch.tensor(points, dtype=torch.float32).to(device)
 
-            main_points = torch.from_numpy(main_points).type(torch.DoubleTensor)
+            main_points = torch.from_numpy(main_points).type(torch.FloatTensor)
             mins, _ = torch.min(main_points, axis=0)
             maxs, _ = torch.max(main_points, axis=0)
             mins = mins.unsqueeze(0)

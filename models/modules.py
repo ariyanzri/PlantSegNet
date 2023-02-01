@@ -22,23 +22,37 @@ class KNNSpaceMean(nn.Module):
         knn_preds = preds.gather(2, k_nearest_ind)
         new_space = torch.mean(knn_preds, 2)
         return new_space
+        # k = torch.argmax(F.softmax(self.k_vector, 0), dim=0) + 1
+        # x = torch.cdist(points, points)
+        # x = torch.topk(x, k, 2, False)[1]
+        # x = x.unsqueeze(-1).expand(*x.shape, preds.shape[2])
+        # preds = preds.unsqueeze(1).expand(
+        #     (preds.shape[0], preds.shape[1], preds.shape[1], preds.shape[2])
+        # )
+        # preds = preds.gather(2, x)
+        # preds = torch.mean(preds, 2)
+        # return preds
 
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-knn_module = KNNSpaceMean(10)
+# knn_module = KNNSpaceMean(10).cuda()
 
-points = torch.rand((4, 8000, 3))
-preds = torch.rand((4, 8000, 256))
+# points = torch.rand((4, 8000, 3)).cuda()
+# preds = torch.rand((4, 8000, 256)).cuda()
 
-points = torch.rand((1, 10, 3))
-preds = torch.rand((1, 10, 3))
+# # points = torch.rand((1, 10, 3)).cuda()
+# # preds = torch.rand((1, 10, 3)).cuda()
 
-new_space = knn_module(points, preds)
+# new_space = knn_module(points, preds)
 
-fig = plt.figure(figsize=(20, 20))
-ax1 = fig.add_subplot(1, 2, 1, projection="3d")
-ax2 = fig.add_subplot(1, 2, 2, projection="3d")
-ax1.scatter(points[:, :, 0], points[:, :, 1], points[:, :, 2], c=preds.squeeze())
-ax2.scatter(points[:, :, 0], points[:, :, 1], points[:, :, 2], c=new_space.squeeze())
-plt.show()
+# points = points.cpu().numpy()
+# preds = preds.cpu().numpy()
+# new_space = new_space.cpu().numpy()
+
+# fig = plt.figure(figsize=(20, 20))
+# ax1 = fig.add_subplot(1, 2, 1, projection="3d")
+# ax2 = fig.add_subplot(1, 2, 2, projection="3d")
+# ax1.scatter(points[:, :, 0], points[:, :, 1], points[:, :, 2], c=preds.squeeze())
+# ax2.scatter(points[:, :, 0], points[:, :, 1], points[:, :, 2], c=new_space.squeeze())
+# plt.show()
