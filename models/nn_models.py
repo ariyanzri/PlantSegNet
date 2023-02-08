@@ -42,7 +42,7 @@ import torchvision
 from sklearn.cluster import DBSCAN
 from data.utils import distinct_colors
 from models.treepartnet_utils import get_final_clusters
-from models.modules import KNNSpaceMean
+from models.modules import KNNSpaceRegularizer
 
 
 class SorghumPartNetSemantic(pl.LightningModule):
@@ -362,10 +362,10 @@ class SorghumPartNetInstance(pl.LightningModule):
             args, (3 if "input_dim" not in self.hparams else self.hparams["input_dim"])
         ).double()
 
-        # if "knn_space_mean" in self.hparams and self.hparams["knn_space_mean"]:
-        #     self.KNN_space_mean_module = KNNSpaceMean(self.hparams["max_k"])
-        # else:
-        #     self.KNN_space_mean_module = None
+        if "loss_fn" in self.hparams and self.hparams["loss_fn"] == "knn_space_mean":
+            self.space_reqularizer_module = KNNSpaceRegularizer(self.hparams["loss_fn_param"])
+        else:
+            self.space_reqularizer_module = None
 
         self.save_hyperparameters()
 
@@ -395,8 +395,8 @@ class SorghumPartNetInstance(pl.LightningModule):
         dgcnn_features = self.DGCNN_feature_space(xyz)
 
         # # Take mean of the k nearest neighbors
-        # if self.KNN_space_mean_module is not None:
-        #     dgcnn_features = self.KNN_space_mean_module(xyz, dgcnn_features)
+        if self.space_reqularizer_module is not None:
+            dgcnn_features = self.space_reqularizer_module(xyz, dgcnn_features)
 
         return dgcnn_features
 
@@ -481,6 +481,8 @@ class SorghumPartNetInstance(pl.LightningModule):
             criterion_cluster = SpaceSimilarityLossV3(points)
         elif self.hparams["loss_fn"] == "v4":
             criterion_cluster = SpaceSimilarityLossV4(points)
+        elif self.hparams["loss_fn"] == "knn_space_mean":
+            criterion_cluster = SpaceSimilarityLossV2()
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
@@ -524,6 +526,8 @@ class SorghumPartNetInstance(pl.LightningModule):
             criterion_cluster = SpaceSimilarityLossV3(points)
         elif self.hparams["loss_fn"] == "v4":
             criterion_cluster = SpaceSimilarityLossV4(points)
+        elif self.hparams["loss_fn"] == "knn_space_mean":
+            criterion_cluster = SpaceSimilarityLossV2()
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
