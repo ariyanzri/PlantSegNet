@@ -140,6 +140,35 @@ class SpaceSimilarityLossV4(nn.Module):
         return normal_loss + self.close_point_coef * close_points_loss
 
 
+# Radius close point loss function with more smooth function
+class SpaceSimilarityLossV5(nn.Module):
+    def __init__(self, points):
+        super().__init__()
+        self.distance_points = torch.cdist(points, points)
+
+    def forward(self, preds, target):
+        if target.shape[-1] != 1:
+            target = torch.unsqueeze(target.float(), dim=-1)
+        else:
+            target = target.float()
+
+        distance_pred = torch.cdist(preds, preds)
+        distances_gt = torch.cdist(target, target)
+
+        loss = torch.mean(
+            torch.where(
+                distances_gt == 0,
+                distance_pred,  # Penalty for same instance points
+                1
+                / (
+                    self.distance_points * distance_pred + 0.01
+                ),  # Penalty for difference instance points
+            )
+        )
+
+        return loss
+
+
 class LeafMetrics(nn.Module):
     def __init__(self, device_name="cpu"):
         super().__init__()

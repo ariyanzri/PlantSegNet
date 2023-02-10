@@ -24,6 +24,7 @@ from models.utils import (
     SpaceSimilarityLossV2,
     SpaceSimilarityLossV3,
     SpaceSimilarityLossV4,
+    SpaceSimilarityLossV5,
     LeafMetrics,
     SemanticMetrics,
     LeafMetricsTraining,
@@ -363,7 +364,9 @@ class SorghumPartNetInstance(pl.LightningModule):
         ).double()
 
         if "loss_fn" in self.hparams and self.hparams["loss_fn"] == "knn_space_mean":
-            self.space_reqularizer_module = KNNSpaceRegularizer(self.hparams["loss_fn_param"])
+            self.space_reqularizer_module = KNNSpaceRegularizer(
+                self.hparams["loss_fn_param"]
+            )
         else:
             self.space_reqularizer_module = None
 
@@ -483,6 +486,10 @@ class SorghumPartNetInstance(pl.LightningModule):
             criterion_cluster = SpaceSimilarityLossV4(points)
         elif self.hparams["loss_fn"] == "knn_space_mean":
             criterion_cluster = SpaceSimilarityLossV2()
+        elif self.hparams["loss_fn"] == "v5":
+            criterion_cluster = SpaceSimilarityLossV5(
+                points, self.hparams["loss_fn_param"]
+            )
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
@@ -528,6 +535,10 @@ class SorghumPartNetInstance(pl.LightningModule):
             criterion_cluster = SpaceSimilarityLossV4(points)
         elif self.hparams["loss_fn"] == "knn_space_mean":
             criterion_cluster = SpaceSimilarityLossV2()
+        elif self.hparams["loss_fn"] == "v5":
+            criterion_cluster = SpaceSimilarityLossV5(
+                points, self.hparams["loss_fn_param"]
+            )
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 

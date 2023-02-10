@@ -175,6 +175,8 @@ class SorghumDatasetWithNormals(data.Dataset):
         else:
             f = h5py.File(self.h5_filename, "r")
             self.length = len(f["points"])
+            # commit later after debuging
+            # self.length = 1000
             f.close()
             if self.is_debug:
                 self.length = 50
