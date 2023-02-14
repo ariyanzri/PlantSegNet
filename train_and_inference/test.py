@@ -79,6 +79,12 @@ def load_data_h5(path, point_key, label_key):
     return data, label
 
 
+def load_data_original_size(h5_path, path, point_key, label_key, index):
+    with h5py.File(h5_path) as f:
+        name = f["names"][index]
+        print(name)
+
+
 def load_data_directory(path, model_name):
     is_instance = model_name != "SorghumPartNetSemantic"
 

@@ -5,14 +5,12 @@ import numpy as np
 import json
 import torch
 import random
-import glob
 import sys
 
 sys.path.append("..")
-from data.load_raw_data import load_real_ply_with_labels
 from models.nn_models import SorghumPartNetInstance
 from models.utils import LeafMetrics, ClusterBasedMetrics
-from data.utils import create_ply_pcd_from_points_with_labels
+
 
 from sklearn.cluster import DBSCAN
 from hyperopt import fmin, tpe, hp, Trials
@@ -168,22 +166,30 @@ def main():
     args = get_args()
     train_param_dict = load_params_dict(args.parameters)
 
-    output_base_path = os.path.join(
+    input_dir = os.path.join(
         "/speedy/ariyanzarei/sorghum_segmentation/results/training_logs",
         train_param_dict["model_name"],
         train_param_dict["dataset"],
     )
 
-    output_dir = os.path.join(output_base_path, "HyperTuning")
+    output_dir = os.path.join(
+        "/speedy/ariyanzarei/sorghum_segmentation/results/hparam_tuning_logs",
+        train_param_dict["model_name"],
+        train_param_dict["dataset"],
+        train_param_dict["experiment_id"],
+    )
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     all_checkpoint_path = os.path.join(
-        output_base_path, train_param_dict["experiment_id"], "checkpoints"
+        input_dir, train_param_dict["experiment_id"], "checkpoints"
     )
     all_checkpoints = os.listdir(all_checkpoint_path)
     if len(all_checkpoints) != 1:
-        print(":: Error reading the model checkpoint.")
+        print(
+            ":: Error reading the model checkpoint. There should be only one checkpoint present. "
+        )
         return
     best_checkpoint_path = os.path.join(all_checkpoint_path, all_checkpoints[0])
     model = load_model(train_param_dict["model_name"], best_checkpoint_path)
