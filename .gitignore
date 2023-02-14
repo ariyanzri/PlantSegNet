@@ -9,6 +9,8 @@ __pycache__/
 # linux output file
 *.out
 
+*.ply
+
 # Distribution / packaging
 .Python
 build/

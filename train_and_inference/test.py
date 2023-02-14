@@ -175,19 +175,16 @@ def run_inference_semantic(model, data, label):
     semantic_metric_calculator = SemanticMetrics()
 
     accuracies = []
-    final_predictions = []
 
     for i in range(data.shape[0]):
-        if i == 10:
-            break
+        # if i == 10:
+        #     break
         preds = model(data[i : i + 1])
         preds = F.softmax(preds, dim=1)
         preds = preds.squeeze().cpu().detach().numpy().T
         preds = np.argmax(preds, 1)
 
         acc = semantic_metric_calculator(torch.Tensor(preds), label[i].squeeze())
-
-        final_predictions.append(preds)
         accuracies.append(acc)
 
         print(f":: Instance {i}/{data.shape[0]}= Accuracy: {acc}")
@@ -200,13 +197,7 @@ def run_inference_semantic(model, data, label):
 
     mean_results_dic = {"accuracy": np.mean(accuracies)}
 
-    final_predictions = np.stack(final_predictions, 0)
-
-    return (
-        full_results_dic,
-        mean_results_dic,
-        final_predictions,
-    )
+    return (full_results_dic, mean_results_dic)
 
 
 def run_inference_instance(model_name, model, data, label, best_params):
@@ -224,19 +215,39 @@ def run_inference_instance(model_name, model, data, label, best_params):
     clusterbased_average_precisions = []
     clusterbased_average_recalls = []
 
-    final_predictions = []
+    if model_name == "SorghumPartNetInstance":
+        eps = (
+            best_params["eps"]
+            if best_params is not None and "eps" in best_params
+            else None
+        )
+        minpoints = (
+            best_params["minpoints"]
+            if best_params is not None and "minpoints" in best_params
+            else None
+        )
+        hparams = (eps, minpoints)
+    elif model_name == "TreePartNet":
+        merge_similar_clusters = (
+            best_params["merge_similar_clusters"]
+            if best_params is not None and "merge_similar_clusters" in best_params
+            else None
+        )
+        merge_threshold = (
+            best_params["merge_threshold"]
+            if best_params is not None and "merge_threshold" in best_params
+            else None
+        )
+        hparams = (merge_similar_clusters, merge_threshold)
 
     for i in range(data.shape[0]):
         # if i == 10:
         #     break
         preds = model(data[i : i + 1])
-        pred_clusters = get_final_clusters(
-            model_name, preds, best_params["eps"], best_params["minpoints"]
-        )
+        pred_clusters = get_final_clusters((model_name, preds))
         if pred_clusters is None:
             continue
 
-        final_predictions.append(pred_clusters)
         pred_clusters = torch.tensor(pred_clusters)
 
         acc, precison, recall, f1 = pointwise_metric_calculator(
@@ -285,13 +296,7 @@ def run_inference_instance(model_name, model, data, label, best_params):
         "clusterbased_average_recall": np.mean(clusterbased_average_recalls),
     }
 
-    final_predictions = np.stack(final_predictions, 0)
-
-    return (
-        full_results_dic,
-        mean_results_dic,
-        final_predictions,
-    )
+    return (full_results_dic, mean_results_dic)
 
 
 def run_inference(args):
@@ -302,18 +307,11 @@ def run_inference(args):
         return run_inference_semantic(*args[1:-1])
 
 
-def save_results(
-    path,
-    full_results_dic,
-    mean_results_dic,
-    final_predictions,
-):
+def save_results(path, full_results_dic, mean_results_dic):
     with open(os.path.join(path, "full_results.json"), "w") as f:
         json.dump(full_results_dic, f)
     with open(os.path.join(path, "mean_results.json"), "w") as f:
         json.dump(mean_results_dic, f)
-    with h5py.File(os.path.join(path, "predictions.hdf5"), "w") as f:
-        f.create_dataset("preds", data=final_predictions)
 
 
 def main():
@@ -351,23 +349,21 @@ def main():
         data, label = load_data_directory(experiment_params["real_data"], model_name)
         print(f":: Starting the inference on the real data...")
         sys.stdout.flush()
-        (
-            full_results_dic,
-            mean_results_dic,
-            final_predictions,
-        ) = run_inference((model_name, model, data, label, best_hparams))
+        (full_results_dic, mean_results_dic) = run_inference(
+            (model_name, model, data, label, best_hparams)
+        )
 
         output_dir = os.path.join(
-            args.output, "inference_logs", dataset_name, "inference", "real_data"
+            args.output,
+            "inference_logs",
+            model_name,
+            dataset_name,
+            experiment_id,
+            "real_data",
         )
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        save_results(
-            output_dir,
-            full_results_dic,
-            mean_results_dic,
-            final_predictions,
-        )
+        save_results(output_dir, full_results_dic, mean_results_dic)
 
     if "test_data" in experiment_params:
         dataset_path = experiment_params["test_data"]
@@ -380,11 +376,15 @@ def main():
         (
             full_results_dic,
             mean_results_dic,
-            final_predictions,
         ) = run_inference((model_name, model, data, label, best_hparams))
 
         output_dir = os.path.join(
-            args.output, "inference_logs", dataset_name, "inference", "test_set"
+            args.output,
+            "inference_logs",
+            model_name,
+            dataset_name,
+            experiment_id,
+            "test_set",
         )
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -392,7 +392,6 @@ def main():
             output_dir,
             full_results_dic,
             mean_results_dic,
-            final_predictions,
         )
 
 
