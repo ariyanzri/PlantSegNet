@@ -169,7 +169,7 @@ def main():
     train_param_dict = load_params_dict(args.parameters)
 
     output_base_path = os.path.join(
-        "/space/ariyanzarei/sorghum_segmentation/results/training_logs",
+        "/speedy/ariyanzarei/sorghum_segmentation/results/training_logs",
         train_param_dict["model_name"],
         train_param_dict["dataset"],
     )

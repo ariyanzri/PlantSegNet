@@ -34,7 +34,7 @@ def get_args():
         help="The path to the results directory. Subdirectories for dataset and model will be automatically created under this directory. ",
         metavar="output",
         required=False,
-        default="/space/ariyanzarei/sorghum_segmentation/results/training_logs",
+        default="/speedy/ariyanzarei/sorghum_segmentation/results/training_logs",
         type=str,
     )
 

@@ -478,7 +478,7 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         pred_leaf_features = self(points)
 
-        if "loss_fn" not in self.hparams:
+        if "loss_fn" not in self.hparams or self.hparams["loss_fn"] == "v2":
             criterion_cluster = SpaceSimilarityLossV2()
         elif self.hparams["loss_fn"] == "v3":
             criterion_cluster = SpaceSimilarityLossV3(points)
@@ -527,7 +527,7 @@ class SorghumPartNetInstance(pl.LightningModule):
 
         pred_leaf_features = self(points)
 
-        if "loss_fn" not in self.hparams:
+        if "loss_fn" not in self.hparams or self.hparams["loss_fn"] == "v2":
             criterion_cluster = SpaceSimilarityLossV2()
         elif self.hparams["loss_fn"] == "v3":
             criterion_cluster = SpaceSimilarityLossV3(points)
