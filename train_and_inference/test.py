@@ -250,7 +250,9 @@ def run_inference_instance(model_name, model, data, label, best_params):
         # if i == 10:
         #     break
         preds = model(data[i : i + 1])
-        pred_clusters = get_final_clusters((model_name, preds))
+        pred_clusters = get_final_clusters(
+            (model_name, preds) if hparams[0] is None else (model_name, preds) + hparams
+        )
         if pred_clusters is None:
             continue
 
@@ -344,10 +346,12 @@ def main():
         model_name,
         dataset_name,
         experiment_id,
-        "best_hparams.json",
+        "DBSCAN_best_param.json",
     )
     if os.path.exists(hyperparameter_path):
         best_hparams = load_json(hyperparameter_path)
+        print(":: Hyperparameter file found. Loaded the parameters as: ")
+        print(best_hparams)
     else:
         best_hparams = None
 
