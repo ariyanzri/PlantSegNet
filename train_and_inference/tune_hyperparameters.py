@@ -102,7 +102,7 @@ def run_inference(predictions, label, DBSCAN_eps, DBSCAN_minpoints, device="cpu"
     clusterbased_average_recalls = []
 
     for i in range(predictions.shape[0]):
-        preds = predictions[i : i + 1]
+        preds = predictions[i]
 
         try:
             pred_clusters = torch.tensor(
@@ -146,7 +146,12 @@ def run_inference(predictions, label, DBSCAN_eps, DBSCAN_minpoints, device="cpu"
 def objective_function(args):
     eps, minpoints, preds, label = args
     res = run_inference(preds, label, DBSCAN_eps=eps, DBSCAN_minpoints=minpoints)
-    return -res["clusterbased_average_precisions"]
+    objective_value = (
+        -(res["clusterbased_average_precisions"] + res["clusterbased_average_recalls"])
+        / 2
+    )
+    print(f"eps: {eps}, minpoints: {minpoints}, objective: {objective_value}")
+    return objective_value
 
 
 def save_results(path, full_results_dic, best_param):
@@ -223,8 +228,8 @@ def main():
     bestParams = fmin(
         fn=objective_function,
         space=[
-            hp.uniform("eps", 0.05, 4),
-            scope.int(hp.quniform("minpoints", 3, 15, q=1)),
+            hp.uniform("eps", 0.05, 5),
+            scope.int(hp.quniform("minpoints", 3, 20, q=1)),
             predictions,
             label,
         ],
