@@ -146,7 +146,7 @@ def run_inference(predictions, label, DBSCAN_eps, DBSCAN_minpoints, device="cpu"
 def objective_function(args):
     eps, minpoints, preds, label = args
     res = run_inference(preds, label, DBSCAN_eps=eps, DBSCAN_minpoints=minpoints)
-    return -res["pointwise_accuracy"]
+    return -res["clusterbased_average_precisions"]
 
 
 def save_results(path, full_results_dic, best_param):
