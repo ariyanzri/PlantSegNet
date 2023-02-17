@@ -75,6 +75,7 @@ def create_ply_pcd_from_points_with_labels(points, labels, is_semantic=False):
         d_colors = [[0.3, 0.1, 0], [0, 0.7, 0], [0, 0, 0.7]]
     else:
         d_colors = distinct_colors(len(list(set(labels))))
+        random.shuffle(d_colors)
 
     for i, l in enumerate(list(set(labels))):
         colors[labels == l, :] = d_colors[i]
