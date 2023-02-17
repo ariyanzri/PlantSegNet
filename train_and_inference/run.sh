@@ -1,1 +1,1 @@
-python test.py -e /speedy/ariyanzarei/sorghum_segmentation/experiments/TreePartNet/SPNS/EXP_04_TreePartNet_SPNS.json
+python train.py -p /speedy/ariyanzarei/sorghum_segmentation/experiments/SorghumPartNetInstance/TPN/EXP_03_SorghumPartNetInstance_TPN.json

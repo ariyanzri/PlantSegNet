@@ -487,9 +487,7 @@ class SorghumPartNetInstance(pl.LightningModule):
         elif self.hparams["loss_fn"] == "knn_space_mean":
             criterion_cluster = SpaceSimilarityLossV2()
         elif self.hparams["loss_fn"] == "v5":
-            criterion_cluster = SpaceSimilarityLossV5(
-                points, self.hparams["loss_fn_param"]
-            )
+            criterion_cluster = SpaceSimilarityLossV5(points)
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
@@ -536,9 +534,7 @@ class SorghumPartNetInstance(pl.LightningModule):
         elif self.hparams["loss_fn"] == "knn_space_mean":
             criterion_cluster = SpaceSimilarityLossV2()
         elif self.hparams["loss_fn"] == "v5":
-            criterion_cluster = SpaceSimilarityLossV5(
-                points, self.hparams["loss_fn_param"]
-            )
+            criterion_cluster = SpaceSimilarityLossV5(points)
 
         leaf_loss = criterion_cluster(pred_leaf_features, leaf)
 
