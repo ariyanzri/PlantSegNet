@@ -51,7 +51,7 @@ def load_json(path):
     return params_dict
 
 
-def load_model(model_name, path):
+def load_model(model_name, path, device="cpu"):
     checkpoint_names = os.listdir(path)
     if len(checkpoint_names) != 1:
         print(
@@ -62,12 +62,12 @@ def load_model(model_name, path):
     path = os.path.join(path, checkpoint_names[0])
     model = eval(model_name).load_from_checkpoint(path)
     model.eval()
-    model = model.cpu()
+    model = model.to(torch.device(device))
 
     if model_name == "SorghumPartNetInstance":
-        model.DGCNN_feature_space.device = "cpu"
+        model.DGCNN_feature_space.device = device
     elif model_name == "SorghumPartNetSemantic":
-        model.DGCNN_semantic_segmentor.device = "cpu"
+        model.DGCNN_semantic_segmentor.device = device
 
     return model
 
@@ -206,12 +206,15 @@ def run_inference_semantic(model, data, label):
     return (full_results_dic, mean_results_dic)
 
 
-def run_inference_instance(model_name, model, data, label, best_params):
-    data = torch.from_numpy(data).type(torch.DoubleTensor)
-    label = torch.Tensor(label).float().squeeze().cpu()
+def run_inference_instance(model_name, model, data, label, best_params, device="cpu"):
+    if model_name == "TreePartNet":
+        data = torch.from_numpy(data).type(torch.FloatTensor).to(torch.device(device))
+    else:
+        data = torch.from_numpy(data).type(torch.DoubleTensor).to(torch.device(device))
+    label = torch.Tensor(label).float().squeeze().to(torch.device(device))
 
-    pointwise_metric_calculator = LeafMetrics()
-    clusterbased_metric_calculator = ClusterBasedMetrics([0.25, 0.5, 0.75], "cpu")
+    pointwise_metric_calculator = LeafMetrics(device)
+    clusterbased_metric_calculator = ClusterBasedMetrics([0.25, 0.5, 0.75], device)
 
     pointwise_accuracies = []
     pointwise_precisions = []
@@ -256,7 +259,7 @@ def run_inference_instance(model_name, model, data, label, best_params):
         if pred_clusters is None:
             continue
 
-        pred_clusters = torch.tensor(pred_clusters)
+        pred_clusters = torch.tensor(pred_clusters).to(torch.device(device))
 
         acc, precison, recall, f1 = pointwise_metric_calculator(
             pred_clusters.unsqueeze(0).unsqueeze(-1),
@@ -312,7 +315,7 @@ def run_inference(args):
     if model_name in ["SorghumPartNetInstance", "TreePartNet"]:
         return run_inference_instance(*args)
     else:
-        return run_inference_semantic(*args[1:-1])
+        return run_inference_semantic(*args[1:-2])
 
 
 def save_results(path, full_results_dic, mean_results_dic):
@@ -330,6 +333,8 @@ def main():
     model_name = experiment_params["model_name"]
     experiment_id = experiment_params["experiment_id"]
 
+    device = "cuda" if model_name == "TreePartNet" else "cpu"
+
     model_path = os.path.join(
         args.output,
         "training_logs",
@@ -338,7 +343,7 @@ def main():
         experiment_id,
         "checkpoints",
     )
-    model = load_model(model_name, model_path)
+    model = load_model(model_name, model_path, device)
 
     hyperparameter_path = os.path.join(
         args.output,
@@ -360,7 +365,7 @@ def main():
         print(f":: Starting the inference on the real data...")
         sys.stdout.flush()
         (full_results_dic, mean_results_dic) = run_inference(
-            (model_name, model, data, label, best_hparams)
+            (model_name, model, data, label, best_hparams, device)
         )
 
         output_dir = os.path.join(
@@ -377,8 +382,10 @@ def main():
 
     if "test_data" in experiment_params:
         dataset_path = experiment_params["test_data"]
-        if dataset_name == "SPNS":
+        if dataset_name == "SPNS" and model_name == "SorghumPartNetInstance":
             data, label = load_data_h5(dataset_path, "points", "labels")
+        elif dataset_name == "SPNS" and model_name == "TreePartNet":
+            data, label = load_data_h5(dataset_path, "points", "cluster_labels")
         elif dataset_name == "TPN":
             data, label = load_data_h5(dataset_path, "points", "primitive_id")
         print(f":: Starting the inference on the test dataset...")
@@ -386,7 +393,7 @@ def main():
         (
             full_results_dic,
             mean_results_dic,
-        ) = run_inference((model_name, model, data, label, best_hparams))
+        ) = run_inference((model_name, model, data, label, best_hparams, device))
 
         output_dir = os.path.join(
             args.output,
