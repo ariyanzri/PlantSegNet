@@ -1,1 +1,1 @@
-python train.py -p /speedy/ariyanzarei/sorghum_segmentation/experiments/SorghumPartNetInstance/TPN/EXP_03_SorghumPartNetInstance_TPN.json
+python tune_hyperparameters.py -p /speedy/ariyanzarei/sorghum_segmentation/experiments/SorghumPartNetInstance/TPN/EXP_03_SorghumPartNetInstance_TPN.json
